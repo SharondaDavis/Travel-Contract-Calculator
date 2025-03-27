@@ -1,46 +1,19 @@
 import React, { useState, useCallback, useMemo } from 'react';
 import { Calculator, CheckCircle, AlertCircle, Star, Lightbulb, Trash2, Plus } from 'lucide-react';
-import { useContractScore } from './hooks/useContractScore';
 import { BarChart as RechartsBarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { Tab } from '@headlessui/react';
-
-interface Assignment {
-  id: string;
-  facilityName: string;
-  location: string;
-  specialty: string;
-  shiftType: string;
-  contractLength: string;
-  startDate: string;
-  hourlyRate: string;
-  weeklyHours: string;
-  housingStipend: string;
-  mealsStipend: string;
-  incidentalsStipend: string;
-  housingExpenses: string;
-  healthInsurance: string;
-  transportationType: string;
-  publicTransportCost: string;
-  rideshareExpenses: string;
-  parkingCost: string;
-  commuteDistance: string;
-  fuelCostPerGallon: string;
-  vehicleMpg: string;
-  rentEstimate: string;
-  utilitiesEstimate: string;
-  groceriesEstimate: string;
-  travelExpenses: string;
-  signOnBonus: string;
-  completionBonus: string;
-  plannedTimeOff: string[];
-  seasonality: string;
-}
+import { Assignment, RatingDetail, ComparisonData } from './types';
+import { FacilityDetailsForm } from './components/FacilityDetailsForm';
+import { TransportationForm } from './components/TransportationForm';
+import { CostOfLivingForm } from './components/CostOfLivingForm';
+import { AIContractInsights } from './components/AIContractInsights';
 
 const initialAssignment: Assignment = {
   id: '1',
   facilityName: '',
   location: '',
   specialty: '',
+  yearsOfExperience: '',
   shiftType: '',
   contractLength: '',
   startDate: '',
@@ -202,8 +175,8 @@ function App() {
     return (totalValue + weeklyNet - expenses + parseFloat(ratio)) / 100;
   };
 
-  const getRatingDetails = (assignment: Assignment) => {
-    const details: { positive: boolean; message: string }[] = [];
+  const getRatingDetails = (assignment: Assignment): RatingDetail[] => {
+    const details: RatingDetail[] = [];
     if (parseFloat(calculateTotalContractValue(assignment)) > 50000) {
       details.push({ positive: true, message: 'High total contract value' });
     } else {
@@ -314,101 +287,12 @@ function App() {
             {assignments.map((assignment) => (
               assignment.id === activeAssignment && (
                 <div key={assignment.id} className="space-y-6">
-                  {/* Existing contract details form */}
+                  {/* Contract details form */}
                   <div className="grid md:grid-cols-2 gap-8">
-                    <section className="bg-white rounded-xl shadow-lg p-6">
-                      <h2 className="text-xl font-semibold mb-6 flex items-center gap-2">
-                        Facility Details
-                      </h2>
-                      
-                      <div className="space-y-4">
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Facility Name
-                          </label>
-                          <input
-                            type="text"
-                            name="facilityName"
-                            value={assignment.facilityName}
-                            onChange={(e) => handleInputChange(e, assignment.id)}
-                            className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                            placeholder="Enter facility name"
-                          />
-                        </div>
-
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Location
-                          </label>
-                          <input
-                            type="text"
-                            name="location"
-                            value={assignment.location}
-                            onChange={(e) => handleInputChange(e, assignment.id)}
-                            className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                            placeholder="City, State"
-                          />
-                        </div>
-
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Specialty
-                          </label>
-                          <input
-                            type="text"
-                            name="specialty"
-                            value={assignment.specialty}
-                            onChange={(e) => handleInputChange(e, assignment.id)}
-                            className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                            placeholder="e.g., ICU, Med-Surg, ER"
-                          />
-                        </div>
-
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Shift Type
-                          </label>
-                          <select
-                            name="shiftType"
-                            value={assignment.shiftType}
-                            onChange={(e) => handleInputChange(e, assignment.id)}
-                            className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                          >
-                            <option value="">Select shift type</option>
-                            <option value="days">Days</option>
-                            <option value="nights">Nights</option>
-                            <option value="rotating">Rotating</option>
-                          </select>
-                        </div>
-
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Contract Length (weeks)
-                          </label>
-                          <input
-                            type="number"
-                            name="contractLength"
-                            value={assignment.contractLength}
-                            onChange={(e) => handleInputChange(e, assignment.id)}
-                            className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                            placeholder="13"
-                          />
-                        </div>
-
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Start Date
-                          </label>
-                          <input
-                            type="date"
-                            name="startDate"
-                            value={assignment.startDate}
-                            onChange={(e) => handleInputChange(e, assignment.id)}
-                            className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                          />
-                        </div>
-                      </div>
-                    </section>
+                    <FacilityDetailsForm 
+                      assignment={assignment} 
+                      handleInputChange={handleInputChange} 
+                    />
 
                     <section className="bg-white rounded-xl shadow-lg p-6">
                       <h2 className="text-xl font-semibold mb-6 flex items-center gap-2">
@@ -513,171 +397,25 @@ function App() {
                       </div>
                     </section>
 
-                    <section className="bg-white rounded-xl shadow-lg p-6">
-                      <h2 className="text-xl font-semibold mb-6 flex items-center gap-2">
-                        Transportation
-                      </h2>
-                      
-                      <div className="space-y-4">
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Transportation Type
-                          </label>
-                          <select
-                            name="transportationType"
-                            value={assignment.transportationType}
-                            onChange={(e) => handleInputChange(e, assignment.id)}
-                            className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                          >
-                            <option value="public">Public Transportation</option>
-                            <option value="rideshare">Rideshare (Uber/Lyft)</option>
-                            <option value="personal">Personal Vehicle</option>
-                          </select>
-                        </div>
+                    <TransportationForm 
+                      assignment={assignment} 
+                      handleInputChange={handleInputChange} 
+                    />
 
-                        {assignment.transportationType === 'public' && (
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                              Weekly Public Transport Cost
-                            </label>
-                            <input
-                              type="number"
-                              name="publicTransportCost"
-                              value={assignment.publicTransportCost}
-                              onChange={(e) => handleInputChange(e, assignment.id)}
-                              className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                              placeholder="0.00"
-                            />
-                          </div>
-                        )}
-
-                        {assignment.transportationType === 'rideshare' && (
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                              Weekly Rideshare Expenses
-                            </label>
-                            <input
-                              type="number"
-                              name="rideshareExpenses"
-                              value={assignment.rideshareExpenses}
-                              onChange={(e) => handleInputChange(e, assignment.id)}
-                              className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                              placeholder="0.00"
-                            />
-                          </div>
-                        )}
-
-                        {assignment.transportationType === 'personal' && (
-                          <>
-                            <div>
-                              <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Commute Distance (miles one way)
-                              </label>
-                              <input
-                                type="number"
-                                name="commuteDistance"
-                                value={assignment.commuteDistance}
-                                onChange={(e) => handleInputChange(e, assignment.id)}
-                                className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                                placeholder="0"
-                              />
-                            </div>
-                            <div>
-                              <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Fuel Cost per Gallon
-                              </label>
-                              <input
-                                type="number"
-                                name="fuelCostPerGallon"
-                                value={assignment.fuelCostPerGallon}
-                                onChange={(e) => handleInputChange(e, assignment.id)}
-                                className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                                placeholder="0.00"
-                              />
-                            </div>
-                            <div>
-                              <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Vehicle MPG
-                              </label>
-                              <input
-                                type="number"
-                                name="vehicleMpg"
-                                value={assignment.vehicleMpg}
-                                onChange={(e) => handleInputChange(e, assignment.id)}
-                                className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                                placeholder="25"
-                              />
-                            </div>
-                            <div>
-                              <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Weekly Parking Cost
-                              </label>
-                              <input
-                                type="number"
-                                name="parkingCost"
-                                value={assignment.parkingCost}
-                                onChange={(e) => handleInputChange(e, assignment.id)}
-                                className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                                placeholder="0.00"
-                              />
-                            </div>
-                          </>
-                        )}
-                      </div>
-                    </section>
-
-                    <section className="bg-white rounded-xl shadow-lg p-6">
-                      <h2 className="text-xl font-semibold mb-6 flex items-center gap-2">
-                        Cost of Living
-                      </h2>
-                      
-                      <div className="space-y-4">
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Weekly Rent/Housing
-                          </label>
-                          <input
-                            type="number"
-                            name="rentEstimate"
-                            value={assignment.rentEstimate}
-                            onChange={(e) => handleInputChange(e, assignment.id)}
-                            className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                            placeholder="0.00"
-                          />
-                        </div>
-
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Weekly Utilities
-                          </label>
-                          <input
-                            type="number"
-                            name="utilitiesEstimate"
-                            value={assignment.utilitiesEstimate}
-                            onChange={(e) => handleInputChange(e, assignment.id)}
-                            className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                            placeholder="0.00"
-                          />
-                        </div>
-
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Weekly Groceries
-                          </label>
-                          <input
-                            type="number"
-                            name="groceriesEstimate"
-                            value={assignment.groceriesEstimate}
-                            onChange={(e) => handleInputChange(e, assignment.id)}
-                            className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                            placeholder="0.00"
-                          />
-                        </div>
-                      </div>
-                    </section>
+                    <CostOfLivingForm 
+                      assignment={assignment} 
+                      handleInputChange={handleInputChange} 
+                    />
                   </div>
 
-                  {/* Financial Summary Section - Moved to bottom */}
+                  {/* AI Contract Insights */}
+                  <AIContractInsights 
+                    assignment={assignment}
+                    calculateNetIncome={calculateNetIncome}
+                    calculateTotalContractValue={calculateTotalContractValue}
+                  />
+
+                  {/* Financial Summary Section */}
                   <section className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl shadow-lg p-6 text-white">
                     <h3 className="text-xl font-semibold mb-6 flex items-center gap-2">
                       <Calculator className="w-6 h-6" />
