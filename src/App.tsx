@@ -199,7 +199,12 @@ function App() {
     const weeklyNet = parseFloat(calculateNetIncome(assignment));
     const expenses = calculateExpenses(assignment);
     const ratio = taxableRatio(assignment);
-    return (totalValue + weeklyNet - expenses + parseFloat(ratio)) / 100;
+    
+    // Calculate a score between 1 and 5 (as a whole number)
+    const rawScore = (totalValue + weeklyNet - expenses + parseFloat(ratio)) / 100;
+    
+    // Ensure the score is between 1 and 5, and round to the nearest integer
+    return Math.max(1, Math.min(5, Math.round(rawScore)));
   };
 
   const getRatingDetails = (assignment: Assignment) => {
@@ -751,7 +756,7 @@ function App() {
                               />
                             ))}
                             <span className="ml-2 text-lg font-semibold">
-                              {getRatingScore(assignment).toFixed(1)}/5.0
+                              {getRatingScore(assignment)}
                             </span>
                           </div>
                           <div className="space-y-2">
