@@ -9,6 +9,7 @@ interface Assignment {
   facilityName: string;
   location: string;
   specialty: string;
+  yearsOfExperience: string;
   shiftType: string;
   contractLength: string;
   startDate: string;
@@ -41,6 +42,7 @@ const initialAssignment: Assignment = {
   facilityName: '',
   location: '',
   specialty: '',
+  yearsOfExperience: '',
   shiftType: '',
   contractLength: '',
   startDate: '',
@@ -224,15 +226,69 @@ function App() {
 
   const getContractTips = (assignment: Assignment) => {
     const tips: string[] = [];
-    if (parseFloat(calculateTotalContractValue(assignment)) > 50000) {
+    const yearsOfExperience = parseFloat(assignment.yearsOfExperience) || 0;
+    const hourlyRate = parseFloat(assignment.hourlyRate) || 0;
+    const totalValue = parseFloat(calculateTotalContractValue(assignment));
+    const weeklyNet = parseFloat(calculateNetIncome(assignment));
+    const expenses = calculateExpenses(assignment);
+    
+    // Basic financial tips
+    if (totalValue > 50000) {
       tips.push('Consider negotiating for a higher salary');
     }
-    if (parseFloat(calculateNetIncome(assignment)) > 1000) {
+    if (weeklyNet > 1000) {
       tips.push('You may be able to afford a more expensive lifestyle');
     }
-    if (calculateExpenses(assignment) < 500) {
+    if (expenses < 500) {
       tips.push('You may be able to save more money');
     }
+    
+    // Experience-based tips
+    if (yearsOfExperience < 1) {
+      tips.push('As a new nurse in this specialty, focus on gaining experience rather than maximizing pay');
+      tips.push('Look for contracts with good mentorship and support systems');
+      if (hourlyRate > 45) {
+        tips.push('Your hourly rate is good for your experience level');
+      }
+    } else if (yearsOfExperience >= 1 && yearsOfExperience < 3) {
+      tips.push('With 1-3 years experience, you can start negotiating for better compensation');
+      if (hourlyRate < 50) {
+        tips.push('Consider negotiating for a higher hourly rate based on your experience');
+      }
+      tips.push('Look for opportunities to gain specialized skills to increase your market value');
+    } else if (yearsOfExperience >= 3 && yearsOfExperience < 5) {
+      tips.push('With 3-5 years experience, you should be commanding competitive rates');
+      if (hourlyRate < 60) {
+        tips.push('Your experience level warrants a higher hourly rate');
+      }
+      tips.push('Consider contracts in high-demand locations to maximize earnings');
+    } else if (yearsOfExperience >= 5) {
+      tips.push('With 5+ years experience, you should be among the top earners');
+      if (hourlyRate < 70) {
+        tips.push('Your extensive experience should command premium rates');
+      }
+      tips.push('Consider negotiating for leadership roles or specialized positions');
+      tips.push('You may qualify for higher-paying crisis contracts');
+    }
+    
+    // Specialty-specific tips based on experience
+    if (assignment.specialty.toLowerCase().includes('icu') || 
+        assignment.specialty.toLowerCase().includes('critical')) {
+      if (yearsOfExperience >= 2) {
+        tips.push('ICU nurses with 2+ years experience are in high demand - negotiate accordingly');
+      }
+    } else if (assignment.specialty.toLowerCase().includes('er') || 
+               assignment.specialty.toLowerCase().includes('emergency')) {
+      if (yearsOfExperience >= 2) {
+        tips.push('ER experience is highly transferable - consider contracts in various locations');
+      }
+    } else if (assignment.specialty.toLowerCase().includes('or') || 
+               assignment.specialty.toLowerCase().includes('operating')) {
+      if (yearsOfExperience >= 3) {
+        tips.push('OR nurses with 3+ years experience can command premium rates');
+      }
+    }
+    
     return tips;
   };
 
@@ -361,6 +417,22 @@ function App() {
                             onChange={(e) => handleInputChange(e, assignment.id)}
                             className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                             placeholder="e.g., ICU, Med-Surg, ER"
+                          />
+                        </div>
+                        
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Years of Experience in Specialty
+                          </label>
+                          <input
+                            type="number"
+                            name="yearsOfExperience"
+                            value={assignment.yearsOfExperience}
+                            onChange={(e) => handleInputChange(e, assignment.id)}
+                            className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                            placeholder="e.g., 2"
+                            min="0"
+                            step="0.5"
                           />
                         </div>
 
