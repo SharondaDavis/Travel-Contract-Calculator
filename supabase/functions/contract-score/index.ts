@@ -16,6 +16,7 @@ interface ContractData {
   facilityName: string;
   location: string;
   specialty: string;
+  yearsOfExperience: string;
   shiftType: string;
   contractLength: string;
   startDate: string;
@@ -40,6 +41,7 @@ Contract Details:
 - Facility: ${contractData.facilityName}
 - Location: ${contractData.location}
 - Specialty: ${contractData.specialty}
+- Years of Experience: ${contractData.yearsOfExperience}
 - Shift Type: ${contractData.shiftType}
 - Contract Length: ${contractData.contractLength} weeks
 - Start Date: ${contractData.startDate}
@@ -55,6 +57,8 @@ Consider:
 3. Travel considerations for time off
 4. Market demand for specialty
 5. Shift type desirability
+6. Experience level and appropriate compensation
+7. Career growth opportunities for the nurse's experience level
 
 Provide a JSON response with:
 - score (1-10)
@@ -68,7 +72,7 @@ Provide a JSON response with:
       messages: [
         {
           role: "system",
-          content: "You are an expert travel nurse contract analyst. Evaluate contracts based on comprehensive factors including compensation, location, timing, and practical considerations."
+          content: "You are an expert travel nurse contract analyst. Evaluate contracts based on comprehensive factors including compensation, location, timing, practical considerations, and the nurse's experience level. Provide tailored recommendations based on years of experience in the specialty."
         },
         {
           role: "user",

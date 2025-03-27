@@ -12,6 +12,7 @@ export function useContractScore(contractData: {
   facilityName: string;
   location: string;
   specialty: string;
+  yearsOfExperience: string;
   shiftType: string;
   contractLength: string;
   startDate: string;
