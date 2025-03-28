@@ -73,11 +73,19 @@ function App() {
   const [activeAssignment, setActiveAssignment] = useState<string>('1');
   const [view, setView] = useState<'details' | 'comparison'>('details');
 
+  // Track field validation
+  const [fieldValidation, setFieldValidation] = useState<{ [key: string]: boolean }>({});
+
   const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>, id: string) => {
     const { name, value } = e.target;
     setAssignments(prev => prev.map(assignment => 
       assignment.id === id ? { ...assignment, [name]: value } : assignment
     ));
+    // Mark field as validated
+    setFieldValidation(prev => ({
+      ...prev,
+      [`${id}-${name}`]: value.trim() !== ''
+    }));
   }, []);
 
   const addNewAssignment = () => {
@@ -252,6 +260,17 @@ function App() {
           <div className="flex items-center justify-center gap-3 mb-4">
             <h1 className="text-3xl font-bold text-gray-800">Travel Contract Calculator</h1>
           </div>
+          <div className="flex justify-center gap-4 mb-4">
+            <a href="https://github.com/sharondadavis/travel-contract-calculator" target="_blank" rel="noopener noreferrer">
+              <img src="https://img.shields.io/github/stars/sharondadavis/travel-contract-calculator?logo=github&style=for-the-badge" alt="GitHub stars" />
+            </a>
+            <a href="https://github.com/sharondadavis/travel-contract-calculator" target="_blank" rel="noopener noreferrer">
+              <img src="https://img.shields.io/github/forks/sharondadavis/travel-contract-calculator?logo=github&style=for-the-badge" alt="GitHub forks" />
+            </a>
+            <a href="https://github.com/sharondadavis/travel-contract-calculator" target="_blank" rel="noopener noreferrer">
+              <img src="https://img.shields.io/github/contributors/sharondadavis/travel-contract-calculator?logo=github&style=for-the-badge" alt="GitHub contributors" />
+            </a>
+          </div>
           <p className="text-gray-600">Compare different travel contracts to make informed decisions</p>
         </header>
 
@@ -331,9 +350,17 @@ function App() {
                             name="facilityName"
                             value={assignment.facilityName}
                             onChange={(e) => handleInputChange(e, assignment.id)}
-                            className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                            className="w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 transition-colors duration-200 bg-white"
                             placeholder="Enter facility name"
                           />
+                          {fieldValidation[`${assignment.id}-facilityName`] && (
+                            <div className="text-green-500 mt-1">
+                              <svg className="w-5 h-5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                              </svg>
+                              <span className="ml-2">Valid</span>
+                            </div>
+                          )}
                         </div>
 
                         <div>
@@ -345,9 +372,17 @@ function App() {
                             name="location"
                             value={assignment.location}
                             onChange={(e) => handleInputChange(e, assignment.id)}
-                            className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                            className="w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 transition-colors duration-200 bg-white"
                             placeholder="City, State"
                           />
+                          {fieldValidation[`${assignment.id}-location`] && (
+                            <div className="text-green-500 mt-1">
+                              <svg className="w-5 h-5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                              </svg>
+                              <span className="ml-2">Valid</span>
+                            </div>
+                          )}
                         </div>
 
                         <div>
@@ -359,9 +394,17 @@ function App() {
                             name="specialty"
                             value={assignment.specialty}
                             onChange={(e) => handleInputChange(e, assignment.id)}
-                            className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                            className="w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 transition-colors duration-200 bg-white"
                             placeholder="e.g., ICU, Med-Surg, ER"
                           />
+                          {fieldValidation[`${assignment.id}-specialty`] && (
+                            <div className="text-green-500 mt-1">
+                              <svg className="w-5 h-5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                              </svg>
+                              <span className="ml-2">Valid</span>
+                            </div>
+                          )}
                         </div>
 
                         <div>
@@ -372,13 +415,21 @@ function App() {
                             name="shiftType"
                             value={assignment.shiftType}
                             onChange={(e) => handleInputChange(e, assignment.id)}
-                            className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                            className="w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 transition-colors duration-200 bg-white"
                           >
                             <option value="">Select shift type</option>
                             <option value="days">Days</option>
                             <option value="nights">Nights</option>
                             <option value="rotating">Rotating</option>
                           </select>
+                          {fieldValidation[`${assignment.id}-shiftType`] && (
+                            <div className="text-green-500 mt-1">
+                              <svg className="w-5 h-5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                              </svg>
+                              <span className="ml-2">Valid</span>
+                            </div>
+                          )}
                         </div>
 
                         <div>
@@ -390,9 +441,17 @@ function App() {
                             name="contractLength"
                             value={assignment.contractLength}
                             onChange={(e) => handleInputChange(e, assignment.id)}
-                            className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                            className="w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 transition-colors duration-200 bg-white"
                             placeholder="13"
                           />
+                          {fieldValidation[`${assignment.id}-contractLength`] && (
+                            <div className="text-green-500 mt-1">
+                              <svg className="w-5 h-5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                              </svg>
+                              <span className="ml-2">Valid</span>
+                            </div>
+                          )}
                         </div>
 
                         <div>
@@ -404,8 +463,16 @@ function App() {
                             name="startDate"
                             value={assignment.startDate}
                             onChange={(e) => handleInputChange(e, assignment.id)}
-                            className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                            className="w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 transition-colors duration-200 bg-white"
                           />
+                          {fieldValidation[`${assignment.id}-startDate`] && (
+                            <div className="text-green-500 mt-1">
+                              <svg className="w-5 h-5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                              </svg>
+                              <span className="ml-2">Valid</span>
+                            </div>
+                          )}
                         </div>
                       </div>
                     </section>
@@ -425,9 +492,17 @@ function App() {
                             name="hourlyRate"
                             value={assignment.hourlyRate}
                             onChange={(e) => handleInputChange(e, assignment.id)}
-                            className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                            className="w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 transition-colors duration-200 bg-white"
                             placeholder="0.00"
                           />
+                          {fieldValidation[`${assignment.id}-hourlyRate`] && (
+                            <div className="text-green-500 mt-1">
+                              <svg className="w-5 h-5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                              </svg>
+                              <span className="ml-2">Valid</span>
+                            </div>
+                          )}
                         </div>
 
                         <div>
@@ -439,9 +514,17 @@ function App() {
                             name="weeklyHours"
                             value={assignment.weeklyHours}
                             onChange={(e) => handleInputChange(e, assignment.id)}
-                            className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                            className="w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 transition-colors duration-200 bg-white"
                             placeholder="36"
                           />
+                          {fieldValidation[`${assignment.id}-weeklyHours`] && (
+                            <div className="text-green-500 mt-1">
+                              <svg className="w-5 h-5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                              </svg>
+                              <span className="ml-2">Valid</span>
+                            </div>
+                          )}
                         </div>
 
                         <div className="pt-4 border-t">
@@ -454,9 +537,17 @@ function App() {
                                 name="housingStipend"
                                 value={assignment.housingStipend}
                                 onChange={(e) => handleInputChange(e, assignment.id)}
-                                className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                                className="w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 transition-colors duration-200 bg-white"
                                 placeholder="0.00"
                               />
+                              {fieldValidation[`${assignment.id}-housingStipend`] && (
+                                <div className="text-green-500 mt-1">
+                                  <svg className="w-5 h-5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                  </svg>
+                                  <span className="ml-2">Valid</span>
+                                </div>
+                              )}
                             </div>
                             <div>
                               <label className="block text-sm text-gray-600 mb-1">Meals Stipend</label>
@@ -465,9 +556,17 @@ function App() {
                                 name="mealsStipend"
                                 value={assignment.mealsStipend}
                                 onChange={(e) => handleInputChange(e, assignment.id)}
-                                className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                                className="w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 transition-colors duration-200 bg-white"
                                 placeholder="0.00"
                               />
+                              {fieldValidation[`${assignment.id}-mealsStipend`] && (
+                                <div className="text-green-500 mt-1">
+                                  <svg className="w-5 h-5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                  </svg>
+                                  <span className="ml-2">Valid</span>
+                                </div>
+                              )}
                             </div>
                             <div>
                               <label className="block text-sm text-gray-600 mb-1">Incidentals Stipend</label>
@@ -476,9 +575,17 @@ function App() {
                                 name="incidentalsStipend"
                                 value={assignment.incidentalsStipend}
                                 onChange={(e) => handleInputChange(e, assignment.id)}
-                                className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                                className="w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 transition-colors duration-200 bg-white"
                                 placeholder="0.00"
                               />
+                              {fieldValidation[`${assignment.id}-incidentalsStipend`] && (
+                                <div className="text-green-500 mt-1">
+                                  <svg className="w-5 h-5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                  </svg>
+                                  <span className="ml-2">Valid</span>
+                                </div>
+                              )}
                             </div>
                           </div>
                         </div>
@@ -493,9 +600,17 @@ function App() {
                                 name="signOnBonus"
                                 value={assignment.signOnBonus}
                                 onChange={(e) => handleInputChange(e, assignment.id)}
-                                className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                                className="w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 transition-colors duration-200 bg-white"
                                 placeholder="0.00"
                               />
+                              {fieldValidation[`${assignment.id}-signOnBonus`] && (
+                                <div className="text-green-500 mt-1">
+                                  <svg className="w-5 h-5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                  </svg>
+                                  <span className="ml-2">Valid</span>
+                                </div>
+                              )}
                             </div>
                             <div>
                               <label className="block text-sm text-gray-600 mb-1">Completion Bonus</label>
@@ -504,9 +619,17 @@ function App() {
                                 name="completionBonus"
                                 value={assignment.completionBonus}
                                 onChange={(e) => handleInputChange(e, assignment.id)}
-                                className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                                className="w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 transition-colors duration-200 bg-white"
                                 placeholder="0.00"
                               />
+                              {fieldValidation[`${assignment.id}-completionBonus`] && (
+                                <div className="text-green-500 mt-1">
+                                  <svg className="w-5 h-5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                  </svg>
+                                  <span className="ml-2">Valid</span>
+                                </div>
+                              )}
                             </div>
                           </div>
                         </div>
@@ -527,12 +650,20 @@ function App() {
                             name="transportationType"
                             value={assignment.transportationType}
                             onChange={(e) => handleInputChange(e, assignment.id)}
-                            className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                            className="w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 transition-colors duration-200 bg-white"
                           >
                             <option value="public">Public Transportation</option>
                             <option value="rideshare">Rideshare (Uber/Lyft)</option>
                             <option value="personal">Personal Vehicle</option>
                           </select>
+                          {fieldValidation[`${assignment.id}-transportationType`] && (
+                            <div className="text-green-500 mt-1">
+                              <svg className="w-5 h-5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                              </svg>
+                              <span className="ml-2">Valid</span>
+                            </div>
+                          )}
                         </div>
 
                         {assignment.transportationType === 'public' && (
@@ -545,9 +676,17 @@ function App() {
                               name="publicTransportCost"
                               value={assignment.publicTransportCost}
                               onChange={(e) => handleInputChange(e, assignment.id)}
-                              className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                              className="w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 transition-colors duration-200 bg-white"
                               placeholder="0.00"
                             />
+                            {fieldValidation[`${assignment.id}-publicTransportCost`] && (
+                              <div className="text-green-500 mt-1">
+                                <svg className="w-5 h-5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                </svg>
+                                <span className="ml-2">Valid</span>
+                              </div>
+                            )}
                           </div>
                         )}
 
@@ -561,9 +700,17 @@ function App() {
                               name="rideshareExpenses"
                               value={assignment.rideshareExpenses}
                               onChange={(e) => handleInputChange(e, assignment.id)}
-                              className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                              className="w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 transition-colors duration-200 bg-white"
                               placeholder="0.00"
                             />
+                            {fieldValidation[`${assignment.id}-rideshareExpenses`] && (
+                              <div className="text-green-500 mt-1">
+                                <svg className="w-5 h-5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                </svg>
+                                <span className="ml-2">Valid</span>
+                              </div>
+                            )}
                           </div>
                         )}
 
@@ -578,22 +725,38 @@ function App() {
                                 name="commuteDistance"
                                 value={assignment.commuteDistance}
                                 onChange={(e) => handleInputChange(e, assignment.id)}
-                                className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                                placeholder="0"
+                                className="w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 transition-colors duration-200 bg-white"
+                                placeholder="0.00"
                               />
+                              {fieldValidation[`${assignment.id}-commuteDistance`] && (
+                                <div className="text-green-500 mt-1">
+                                  <svg className="w-5 h-5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                  </svg>
+                                  <span className="ml-2">Valid</span>
+                                </div>
+                              )}
                             </div>
                             <div>
                               <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Fuel Cost per Gallon
+                                Fuel Cost Per Gallon
                               </label>
                               <input
                                 type="number"
                                 name="fuelCostPerGallon"
                                 value={assignment.fuelCostPerGallon}
                                 onChange={(e) => handleInputChange(e, assignment.id)}
-                                className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                                className="w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 transition-colors duration-200 bg-white"
                                 placeholder="0.00"
                               />
+                              {fieldValidation[`${assignment.id}-fuelCostPerGallon`] && (
+                                <div className="text-green-500 mt-1">
+                                  <svg className="w-5 h-5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                  </svg>
+                                  <span className="ml-2">Valid</span>
+                                </div>
+                              )}
                             </div>
                             <div>
                               <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -604,9 +767,17 @@ function App() {
                                 name="vehicleMpg"
                                 value={assignment.vehicleMpg}
                                 onChange={(e) => handleInputChange(e, assignment.id)}
-                                className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                                className="w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 transition-colors duration-200 bg-white"
                                 placeholder="25"
                               />
+                              {fieldValidation[`${assignment.id}-vehicleMpg`] && (
+                                <div className="text-green-500 mt-1">
+                                  <svg className="w-5 h-5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                  </svg>
+                                  <span className="ml-2">Valid</span>
+                                </div>
+                              )}
                             </div>
                             <div>
                               <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -617,9 +788,17 @@ function App() {
                                 name="parkingCost"
                                 value={assignment.parkingCost}
                                 onChange={(e) => handleInputChange(e, assignment.id)}
-                                className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                                className="w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 transition-colors duration-200 bg-white"
                                 placeholder="0.00"
                               />
+                              {fieldValidation[`${assignment.id}-parkingCost`] && (
+                                <div className="text-green-500 mt-1">
+                                  <svg className="w-5 h-5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                  </svg>
+                                  <span className="ml-2">Valid</span>
+                                </div>
+                              )}
                             </div>
                           </>
                         )}
@@ -641,9 +820,17 @@ function App() {
                             name="rentEstimate"
                             value={assignment.rentEstimate}
                             onChange={(e) => handleInputChange(e, assignment.id)}
-                            className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                            className="w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 transition-colors duration-200 bg-white"
                             placeholder="0.00"
                           />
+                          {fieldValidation[`${assignment.id}-rentEstimate`] && (
+                            <div className="text-green-500 mt-1">
+                              <svg className="w-5 h-5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                              </svg>
+                              <span className="ml-2">Valid</span>
+                            </div>
+                          )}
                         </div>
 
                         <div>
@@ -655,9 +842,17 @@ function App() {
                             name="utilitiesEstimate"
                             value={assignment.utilitiesEstimate}
                             onChange={(e) => handleInputChange(e, assignment.id)}
-                            className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                            className="w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 transition-colors duration-200 bg-white"
                             placeholder="0.00"
                           />
+                          {fieldValidation[`${assignment.id}-utilitiesEstimate`] && (
+                            <div className="text-green-500 mt-1">
+                              <svg className="w-5 h-5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                              </svg>
+                              <span className="ml-2">Valid</span>
+                            </div>
+                          )}
                         </div>
 
                         <div>
@@ -669,9 +864,17 @@ function App() {
                             name="groceriesEstimate"
                             value={assignment.groceriesEstimate}
                             onChange={(e) => handleInputChange(e, assignment.id)}
-                            className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                            className="w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 transition-colors duration-200 bg-white"
                             placeholder="0.00"
                           />
+                          {fieldValidation[`${assignment.id}-groceriesEstimate`] && (
+                            <div className="text-green-500 mt-1">
+                              <svg className="w-5 h-5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                              </svg>
+                              <span className="ml-2">Valid</span>
+                            </div>
+                          )}
                         </div>
                       </div>
                     </section>
