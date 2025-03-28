@@ -8,7 +8,7 @@ A comprehensive tool for travel nurses to compare and analyze different contract
 - Cost of living analysis
 - Transportation cost calculator
 - Tax implications estimation
-- Location-based insights
+- Location-based insights (planned)
 - Contract scoring system
 
 ## Tech Stack
@@ -16,9 +16,9 @@ A comprehensive tool for travel nurses to compare and analyze different contract
 - React
 - TypeScript
 - Tailwind CSS
-- Supabase
+- Supabase (planned)
 - React Query
-- OpenAI Integration
+- OpenAI Integration (planned)
 
 ## Getting Started
 
