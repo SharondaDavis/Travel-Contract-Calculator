@@ -7,8 +7,7 @@
   "functions": {
     "api/chat/route.ts": {
       "memory": 1024,
-      "maxDuration": 10,
-      "runtime": "edge"
+      "maxDuration": 10
     }
   },
   "rewrites": [
