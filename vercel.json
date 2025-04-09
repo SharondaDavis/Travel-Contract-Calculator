@@ -8,7 +8,7 @@
     "api/chat/route.ts": {
       "memory": 1024,
       "maxDuration": 10,
-      "runtime": "edge@1.0.0"
+      "runtime": "@vercel/edge@1.0.0"
     }
   },
   "rewrites": [
