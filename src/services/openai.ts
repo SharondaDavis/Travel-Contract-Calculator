@@ -30,15 +30,41 @@ export async function chatWithOpenAI(messages: Message[], context: ChatContext):
       }),
     });
 
+    // First check if the response is ok
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || 'Failed to get response from OpenAI');
+      let errorMessage = 'Failed to get response from OpenAI';
+      try {
+        const errorData = await response.json();
+        errorMessage = errorData.error || errorMessage;
+      } catch (e) {
+        console.error('Error parsing error response:', e);
+      }
+      throw new Error(errorMessage);
     }
 
-    const data = await response.json();
-    if (!data.content) {
-      throw new Error('Invalid response format from OpenAI');
+    // Try to parse the response as JSON
+    let data;
+    try {
+      const text = await response.text();
+      data = JSON.parse(text);
+    } catch (e) {
+      console.error('Error parsing response:', e);
+      throw new Error('Invalid response format from server');
     }
+
+    // Check if the response has the expected format
+    if (!data || typeof data !== 'object') {
+      throw new Error('Invalid response format from server');
+    }
+
+    if (data.error) {
+      throw new Error(data.error);
+    }
+
+    if (!data.content) {
+      throw new Error('No content in response from server');
+    }
+
     return data.content;
   } catch (error) {
     console.error('Error in OpenAI chat:', error);
