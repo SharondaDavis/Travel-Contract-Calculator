@@ -12,16 +12,19 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     sourcemap: true,
+    chunkSizeWarningLimit: 1000,
     rollupOptions: {
       output: {
         manualChunks: {
-          'vendor': ['react', 'react-dom']
+          'vendor': ['react', 'react-dom'],
+          'openai': ['openai'],
+          'utils': ['@supabase/supabase-js', 'idb']
         }
       }
     }
   },
   optimizeDeps: {
-    include: ['react', 'react-dom']
+    include: ['react', 'react-dom', 'openai', '@supabase/supabase-js', 'idb']
   },
   resolve: {
     alias: {
