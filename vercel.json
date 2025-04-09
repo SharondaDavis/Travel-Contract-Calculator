@@ -4,10 +4,16 @@
   "outputDirectory": "dist",
   "framework": "vite",
   "installCommand": "npm install",
+  "functions": {
+    "app/api/chat/route.ts": {
+      "memory": 1024,
+      "maxDuration": 10
+    }
+  },
   "rewrites": [
     {
       "source": "/api/(.*)",
-      "destination": "/api/$1"
+      "destination": "/app/api/$1"
     }
   ],
   "headers": [
