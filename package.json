@@ -7,7 +7,9 @@
     "node": "18.x"
   },
   "scripts": {
-    "dev": "vite",
+    "dev:server": "node dev-server.mjs",
+    "dev:app": "vite",
+    "dev": "concurrently \"npm run dev:server\" \"npm run dev:app\"",
     "build": "vite build",
     "preview": "vite preview"
   },
@@ -40,6 +42,7 @@
     "@typescript-eslint/parser": "^6.10.0",
     "@vitejs/plugin-react": "^4.2.0",
     "autoprefixer": "^10.4.16",
+    "concurrently": "^9.1.2",
     "eslint": "^8.53.0",
     "eslint-plugin-react-hooks": "^4.6.0",
     "eslint-plugin-react-refresh": "^0.4.4",
