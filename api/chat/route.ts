@@ -1,23 +1,25 @@
 import OpenAI from 'openai';
 
-export const runtime = 'edge';
-
-// CORS headers
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-  'Access-Control-Max-Age': '86400',
+export const config = {
+  runtime: 'edge'
 };
 
-export async function OPTIONS() {
-  return new Response(null, {
-    status: 204,
-    headers: corsHeaders
-  });
-}
+export default async function handler(request: Request) {
+  if (request.method === 'OPTIONS') {
+    return new Response(null, {
+      status: 204,
+    });
+  }
 
-export async function POST(request: Request) {
+  if (request.method !== 'POST') {
+    return new Response(JSON.stringify({ error: 'Method not allowed' }), {
+      status: 405,
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+  }
+
   try {
     console.log('Chat API route hit');
     const { messages, context, apiKey } = await request.json();
@@ -33,7 +35,6 @@ export async function POST(request: Request) {
         status: 401,
         headers: {
           'Content-Type': 'application/json',
-          ...corsHeaders
         },
       });
     }
@@ -85,7 +86,6 @@ Keep responses concise but informative.`
       status: 200,
       headers: {
         'Content-Type': 'application/json',
-        ...corsHeaders
       },
     });
   } catch (error) {
@@ -94,7 +94,6 @@ Keep responses concise but informative.`
       status: 500,
       headers: {
         'Content-Type': 'application/json',
-        ...corsHeaders
       },
     });
   }
