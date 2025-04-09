@@ -36,6 +36,9 @@ export async function chatWithOpenAI(messages: Message[], context: ChatContext):
     }
 
     const data = await response.json();
+    if (!data.content) {
+      throw new Error('Invalid response format from OpenAI');
+    }
     return data.content;
   } catch (error) {
     console.error('Error in OpenAI chat:', error);
