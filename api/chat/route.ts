@@ -5,41 +5,51 @@ export const config = {
 };
 
 export default async function handler(request: Request) {
+  console.log('API Route Handler Started');
+
   if (request.method === 'OPTIONS') {
     return new Response(null, {
       status: 204,
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'POST, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+      }
     });
   }
 
   if (request.method !== 'POST') {
-    return new Response(JSON.stringify({ error: 'Method not allowed' }), {
+    return new Response(JSON.stringify({ 
+      error: 'Method not allowed',
+      details: `Method ${request.method} is not supported`
+    }), {
       status: 405,
       headers: {
         'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*',
       },
     });
   }
 
   try {
-    console.log('Chat API route hit');
+    console.log('Parsing request body...');
     const { messages, context, apiKey } = await request.json();
-    console.log('Request data received:', { 
-      messages: messages ? 'exists' : 'missing', 
-      context: context ? 'exists' : 'missing', 
-      apiKey: apiKey ? 'exists' : 'missing' 
-    });
-
+    
     if (!apiKey) {
       console.log('No API key provided');
-      return new Response(JSON.stringify({ error: 'OpenAI API key is required' }), {
+      return new Response(JSON.stringify({ 
+        error: 'OpenAI API key is required',
+        details: 'API key was not provided in the request'
+      }), {
         status: 401,
         headers: {
           'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*',
         },
       });
     }
 
-    // Initialize OpenAI with Edge-compatible configuration
+    console.log('Initializing OpenAI client...');
     const openai = new OpenAI({
       apiKey: apiKey,
       baseURL: 'https://api.openai.com/v1',
@@ -77,7 +87,7 @@ Keep responses concise but informative.`
       content: `Here is the contract data: ${JSON.stringify(context.contracts)}`
     };
 
-    console.log('Sending request to OpenAI');
+    console.log('Sending request to OpenAI...');
     const completion = await openai.chat.completions.create({
       model: 'gpt-4-turbo-preview',
       messages: [systemMessage, contextMessage, ...messages],
@@ -88,7 +98,6 @@ Keep responses concise but informative.`
     console.log('Received response from OpenAI');
     const response = completion.choices[0].message.content;
     
-    // Ensure we're sending a properly formatted JSON response
     return new Response(JSON.stringify({ content: response }), {
       status: 200,
       headers: {
@@ -99,10 +108,13 @@ Keep responses concise but informative.`
       },
     });
   } catch (error) {
-    console.error('Error in OpenAI chat:', error);
-    // Ensure error response is properly formatted
+    console.error('Error in chat handler:', error);
+    
+    // Ensure we return a properly formatted error response
     return new Response(JSON.stringify({ 
-      error: error instanceof Error ? error.message : 'Failed to process chat request' 
+      error: 'Failed to process chat request',
+      details: error instanceof Error ? error.message : 'Unknown error occurred',
+      timestamp: new Date().toISOString()
     }), {
       status: 500,
       headers: {
