@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Send, Loader2, X } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { Assignment } from '../App';
@@ -54,6 +54,7 @@ export function ChatPanel({ contracts, onClose }: ChatPanelProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const lastRequestRef = useRef<number>(0);
 
   // Prevent background scrolling when chat panel is open
   useEffect(() => {
@@ -67,22 +68,26 @@ export function ChatPanel({ contracts, onClose }: ChatPanelProps) {
   useEffect(() => {
     const loadMessages = async () => {
       try {
-        // Clear all existing messages from IndexedDB
-        await db.chat_messages.clear();
-        
-        // Initialize with welcome message
-        const initialMessage = {
-          role: 'assistant' as const,
-          content: `# Welcome to Contract Assistant! 👋\n\nI have access to ${contracts.length} travel nurse contracts. I can help you:\n\n- Compare contracts\n- Analyze details\n- Answer questions about benefits\n- Calculate potential earnings\n- Provide negotiation tips\n\nWhat would you like to know?`
-        };
-        setMessages([initialMessage]);
-
-        // Save the initial message to IndexedDB
-        await db.chat_messages.add({
-          role: 'assistant',
-          content: initialMessage.content,
-          timestamp: new Date()
-        });
+        const existingMessages = await db.chat_messages.toArray();
+        if (existingMessages.length === 0) {
+          // Only initialize with welcome message if no messages exist
+          const initialMessage = {
+            role: 'assistant' as const,
+            content: `# Welcome to Contract Assistant! 👋\n\nI have access to ${contracts.length} travel nurse contracts. I can help you:\n\n- Compare contracts\n- Analyze details\n- Answer questions about benefits\n- Calculate potential earnings\n- Provide negotiation tips\n\nWhat would you like to know?`
+          };
+          setMessages([initialMessage]);
+          await db.chat_messages.add({
+            role: 'assistant',
+            content: initialMessage.content,
+            timestamp: new Date()
+          });
+        } else {
+          // Load existing messages
+          setMessages(existingMessages.map(msg => ({
+            role: msg.role,
+            content: msg.content
+          })));
+        }
       } catch (error) {
         console.error('Error loading messages:', error);
         // Initialize with welcome message if there's an error
@@ -95,7 +100,7 @@ export function ChatPanel({ contracts, onClose }: ChatPanelProps) {
     };
 
     loadMessages();
-  }, [contracts]);
+  }, []); // Remove contracts from dependencies
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -109,9 +114,16 @@ export function ChatPanel({ contracts, onClose }: ChatPanelProps) {
     setInput(prompt);
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
     if (!input.trim() || isLoading) return;
+
+    // Add rate limiting
+    const now = Date.now();
+    if (now - lastRequestRef.current < 1000) { // 1 second cooldown
+      return;
+    }
+    lastRequestRef.current = now;
 
     const userMessage: Message = { role: 'user', content: input };
     setMessages(prev => [...prev, userMessage]);
@@ -175,7 +187,7 @@ export function ChatPanel({ contracts, onClose }: ChatPanelProps) {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [input, isLoading, messages, contracts]);
 
   return (
     <>
