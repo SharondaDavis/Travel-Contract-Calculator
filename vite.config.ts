@@ -19,6 +19,13 @@ export default defineConfig({
     include: ['react', 'react-dom']
   },
   server: {
-    port: 3000
+    port: 5180,
+    strictPort: true,
+    proxy: {
+      '/api': {
+        target: 'http://localhost:3001',
+        changeOrigin: true,
+      },
+    }
   }
 })
