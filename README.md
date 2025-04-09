@@ -138,13 +138,13 @@ The goal is to empower nurses to build applications that:
    - "Which contract has better benefits?"
 3. The AI will analyze your contracts and provide detailed responses
 
-### Exporting Contracts
+### Exporting Contracts (to-do)
 
 1. Select the contracts you want to export
 2. Click the "Export" button
 3. Choose a location to save the PDF file
 
-### Importing Contracts
+### Importing Contracts (to-do)
 
 1. Click the "Import" button
 2. Select a PDF file containing contract details
