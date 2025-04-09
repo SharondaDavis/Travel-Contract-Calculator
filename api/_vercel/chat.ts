@@ -1,16 +1,26 @@
-import { NextApiRequest, NextApiResponse } from 'next';
+import type { VercelRequest, VercelResponse } from '@vercel/node';
 import OpenAI from 'openai';
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+export const config = {
+  runtime: 'edge',
+};
+
+export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
+    return new Response(JSON.stringify({ error: 'Method not allowed' }), {
+      status: 405,
+      headers: { 'Content-Type': 'application/json' },
+    });
   }
 
   try {
-    const { messages, context, apiKey } = req.body;
+    const { messages, context, apiKey } = await req.json();
 
     if (!apiKey) {
-      return res.status(401).json({ error: 'OpenAI API key is required' });
+      return new Response(JSON.stringify({ error: 'OpenAI API key is required' }), {
+        status: 401,
+        headers: { 'Content-Type': 'application/json' },
+      });
     }
 
     const openai = new OpenAI({
@@ -59,9 +69,15 @@ REMEMBER: These are the ONLY contracts that exist. Any contract not listed above
     });
 
     const response = completion.choices[0].message.content;
-    return res.status(200).json({ content: response });
+    return new Response(JSON.stringify({ content: response }), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' },
+    });
   } catch (error) {
     console.error('Error in OpenAI chat:', error);
-    return res.status(500).json({ error: 'Failed to process chat request' });
+    return new Response(JSON.stringify({ error: 'Failed to process chat request' }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' },
+    });
   }
 } 
