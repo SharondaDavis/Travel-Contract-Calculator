@@ -18,17 +18,18 @@ export default defineConfig({
         manualChunks: {
           'vendor': ['react', 'react-dom'],
           'openai': ['openai'],
-          'utils': ['@supabase/supabase-js', 'idb']
+          'utils': ['@supabase/supabase-js', 'dexie']
         }
       }
     }
   },
   optimizeDeps: {
-    include: ['react', 'react-dom', 'openai', '@supabase/supabase-js', 'idb']
+    include: ['react', 'react-dom', 'openai', '@supabase/supabase-js', 'dexie']
   },
   resolve: {
     alias: {
       '@': resolve(__dirname, 'src'),
+      'idb': 'dexie'
     },
   },
   server: {

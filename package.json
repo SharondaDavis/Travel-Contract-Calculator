@@ -23,6 +23,7 @@
     "dexie": "^4.0.11",
     "edge-runtime": "^4.0.1",
     "express": "^5.1.0",
+    "idb": "^8.0.2",
     "lucide-react": "^0.294.0",
     "next": "^15.2.5",
     "openai": "^4.93.0",
