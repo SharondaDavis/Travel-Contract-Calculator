@@ -5,7 +5,7 @@
   "framework": "vite",
   "installCommand": "npm install",
   "functions": {
-    "app/api/chat/route.ts": {
+    "api/chat/route.ts": {
       "memory": 1024,
       "maxDuration": 10
     }
