@@ -5,20 +5,16 @@
   "framework": "vite",
   "installCommand": "npm install",
   "functions": {
-    "app/api/**/*": {
-      "runtime": "edge",
+    "app/api/chat/route.ts": {
       "memory": 1024,
-      "maxDuration": 10
+      "maxDuration": 10,
+      "runtime": "edge@1.0.0"
     }
   },
   "rewrites": [
     {
-      "source": "/api/:path*",
-      "destination": "/app/api/:path*"
-    },
-    {
-      "source": "/(.*)",
-      "destination": "/"
+      "source": "/api/(.*)",
+      "destination": "/app/api/$1"
     }
   ],
   "headers": [
