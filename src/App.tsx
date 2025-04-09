@@ -987,8 +987,8 @@ function App() {
                     </div>
 
                     {/* Contract Rating */}
-                    <div className="bg-white/10 rounded-lg p-6">
-                      <h4 className="text-lg font-medium mb-4">Contract Rating</h4>
+                    <div className="bg-white rounded-lg p-6 shadow-sm">
+                      <h4 className="text-lg font-medium mb-4 text-gray-900">Contract Rating</h4>
                       <div className="flex items-center gap-4">
                         <div className="flex-1">
                           <div>
@@ -1002,9 +1002,9 @@ function App() {
                                       className={`w-5 h-5 transition-colors duration-200 ${
                                         hasRequiredFields
                                           ? getRatingScore(assignment) >= star
-                                            ? 'text-blue-500 fill-blue-500'
+                                            ? 'text-yellow-500 fill-yellow-500'
                                             : 'text-gray-300'
-                                          : 'text-gray-200/60'
+                                          : 'text-gray-200'
                                       }`}
                                     />
                                   );
@@ -1013,13 +1013,14 @@ function App() {
                               {assignment.hourlyRate && assignment.weeklyHours && assignment.contractLength ? (
                                 <div className="ml-3 flex items-baseline">
                                   <span className="text-xl font-semibold text-gray-900">{getRatingScore(assignment)}</span>
-                                  <span className="text-sm text-gray-400 ml-1">/5</span>
+                                  <span className="text-sm text-gray-500 ml-1">/5</span>
                                 </div>
                               ) : null}
                             </div>
-                            {!(assignment.hourlyRate && assignment.weeklyHours && assignment.contractLength) ? (
-                              <p className="text-sm text-gray-500 flex items-center gap-1">
-                                <span className="inline-block w-1.5 h-1.5 rounded-full bg-blue-500/40"></span>
+                            
+                            {!assignment.hourlyRate || !assignment.weeklyHours || !assignment.contractLength ? (
+                              <p className="text-sm text-gray-600 flex items-center gap-1">
+                                <span className="inline-block w-1.5 h-1.5 rounded-full bg-yellow-500"></span>
                                 Complete {[
                                   !assignment.hourlyRate && 'pay rate',
                                   !assignment.weeklyHours && 'hours',
@@ -1030,13 +1031,13 @@ function App() {
                               <p className="text-sm mt-1 flex items-center gap-1.5">
                                 {getRatingScore(assignment) >= 4 ? (
                                   <>
-                                    <span className="inline-block w-1.5 h-1.5 rounded-full bg-blue-500"></span>
-                                    <span className="text-blue-700 font-medium">Excellent offer</span>
+                                    <span className="inline-block w-1.5 h-1.5 rounded-full bg-yellow-500"></span>
+                                    <span className="text-yellow-700 font-medium">Excellent offer</span>
                                   </>
                                 ) : getRatingScore(assignment) >= 3 ? (
                                   <>
-                                    <span className="inline-block w-1.5 h-1.5 rounded-full bg-blue-400"></span>
-                                    <span className="text-blue-600">Good offer</span>
+                                    <span className="inline-block w-1.5 h-1.5 rounded-full bg-yellow-500"></span>
+                                    <span className="text-yellow-600">Good offer</span>
                                   </>
                                 ) : (
                                   <>
@@ -1047,26 +1048,27 @@ function App() {
                               </p>
                             )}
                           </div>
-                          <div className="space-y-2">
+                          
+                          <div className="mt-4 space-y-2">
                             {getRatingDetails(assignment).map((detail, index) => (
-                              <div key={index} className="flex items-center gap-2 text-sm">
+                              <div key={index} className="flex items-center gap-2 text-sm text-gray-700">
                                 {detail.positive ? (
-                                  <CheckCircle className="w-4 h-4 text-green-400" />
+                                  <CheckCircle className="w-4 h-4 text-green-500" />
                                 ) : (
-                                  <AlertCircle className="w-4 h-4 text-yellow-400" />
+                                  <AlertCircle className="w-4 h-4 text-yellow-500" />
                                 )}
                                 {detail.message}
                               </div>
                             ))}
                           </div>
                         </div>
-                        <div className="hidden md:block w-px h-24 bg-white/20"></div>
+                        <div className="hidden md:block w-px h-24 bg-gray-200"></div>
                         <div className="hidden md:block">
-                          <h5 className="font-medium mb-2">Quick Tips</h5>
+                          <h5 className="font-medium mb-2 text-gray-900">Quick Tips</h5>
                           <ul className="space-y-1 text-sm">
                             {getContractTips(assignment).map((tip, index) => (
-                              <li key={index} className="flex items-center gap-2">
-                                <Lightbulb className="w-4 h-4 text-yellow-400" />
+                              <li key={index} className="flex items-center gap-2 text-gray-600">
+                                <Lightbulb className="w-4 h-4 text-yellow-500" />
                                 {tip}
                               </li>
                             ))}
