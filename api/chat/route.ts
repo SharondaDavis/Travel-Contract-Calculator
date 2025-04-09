@@ -1,7 +1,8 @@
 import OpenAI from 'openai';
 
 export const config = {
-  runtime: 'edge'
+  runtime: 'edge',
+  regions: ['iad1']
 };
 
 export default async function handler(request: Request) {
