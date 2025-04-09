@@ -13,7 +13,7 @@
   "rewrites": [
     {
       "source": "/api/(.*)",
-      "destination": "/app/api/$1"
+      "destination": "/api/$1"
     }
   ],
   "headers": [
@@ -32,6 +32,22 @@
         {
           "key": "Cache-Control",
           "value": "no-store"
+        },
+        {
+          "key": "Access-Control-Allow-Origin",
+          "value": "*"
+        },
+        {
+          "key": "Access-Control-Allow-Methods",
+          "value": "GET, POST, OPTIONS"
+        },
+        {
+          "key": "Access-Control-Allow-Headers",
+          "value": "Content-Type, Authorization"
+        },
+        {
+          "key": "Access-Control-Max-Age",
+          "value": "86400"
         }
       ]
     }
