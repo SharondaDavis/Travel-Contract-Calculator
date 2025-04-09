@@ -8,7 +8,7 @@
     "api/chat/route.ts": {
       "memory": 1024,
       "maxDuration": 10,
-      "runtime": "edge"
+      "runtime": "nodejs18.x"
     }
   },
   "rewrites": [

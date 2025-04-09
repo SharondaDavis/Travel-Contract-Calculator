@@ -1,15 +1,17 @@
 import OpenAI from 'openai';
+import { NextRequest, NextResponse } from 'next/server';
 
-export const config = {
-  runtime: 'edge',
-  regions: ['iad1']
-};
+// Remove Edge runtime config
+// export const config = {
+//   runtime: 'edge',
+//   regions: ['iad1']
+// };
 
-export default async function handler(request: Request) {
+export default async function handler(request: NextRequest) {
   console.log('API Route Handler Started');
 
   if (request.method === 'OPTIONS') {
-    return new Response(null, {
+    return new NextResponse(null, {
       status: 204,
       headers: {
         'Access-Control-Allow-Origin': '*',
@@ -20,13 +22,12 @@ export default async function handler(request: Request) {
   }
 
   if (request.method !== 'POST') {
-    return new Response(JSON.stringify({ 
+    return NextResponse.json({ 
       error: 'Method not allowed',
       details: `Method ${request.method} is not supported`
-    }), {
+    }, {
       status: 405,
       headers: {
-        'Content-Type': 'application/json',
         'Access-Control-Allow-Origin': '*',
       },
     });
@@ -38,13 +39,12 @@ export default async function handler(request: Request) {
     
     if (!apiKey) {
       console.log('No API key provided');
-      return new Response(JSON.stringify({ 
+      return NextResponse.json({ 
         error: 'OpenAI API key is required',
         details: 'API key was not provided in the request'
-      }), {
+      }, {
         status: 401,
         headers: {
-          'Content-Type': 'application/json',
           'Access-Control-Allow-Origin': '*',
         },
       });
@@ -99,10 +99,9 @@ Keep responses concise but informative.`
     console.log('Received response from OpenAI');
     const response = completion.choices[0].message.content;
     
-    return new Response(JSON.stringify({ content: response }), {
+    return NextResponse.json({ content: response }, {
       status: 200,
       headers: {
-        'Content-Type': 'application/json',
         'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Methods': 'POST, OPTIONS',
         'Access-Control-Allow-Headers': 'Content-Type',
@@ -112,14 +111,13 @@ Keep responses concise but informative.`
     console.error('Error in chat handler:', error);
     
     // Ensure we return a properly formatted error response
-    return new Response(JSON.stringify({ 
+    return NextResponse.json({ 
       error: 'Failed to process chat request',
       details: error instanceof Error ? error.message : 'Unknown error occurred',
       timestamp: new Date().toISOString()
-    }), {
+    }, {
       status: 500,
       headers: {
-        'Content-Type': 'application/json',
         'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Methods': 'POST, OPTIONS',
         'Access-Control-Allow-Headers': 'Content-Type',
