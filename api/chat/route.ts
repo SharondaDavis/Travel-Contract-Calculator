@@ -39,8 +39,13 @@ export default async function handler(request: Request) {
       });
     }
 
+    // Initialize OpenAI with Edge-compatible configuration
     const openai = new OpenAI({
-      apiKey: apiKey
+      apiKey: apiKey,
+      baseURL: 'https://api.openai.com/v1',
+      defaultHeaders: {
+        'Content-Type': 'application/json',
+      },
     });
 
     // Construct system message
@@ -82,18 +87,29 @@ Keep responses concise but informative.`
 
     console.log('Received response from OpenAI');
     const response = completion.choices[0].message.content;
+    
+    // Ensure we're sending a properly formatted JSON response
     return new Response(JSON.stringify({ content: response }), {
       status: 200,
       headers: {
         'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'POST, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type',
       },
     });
   } catch (error) {
     console.error('Error in OpenAI chat:', error);
-    return new Response(JSON.stringify({ error: 'Failed to process chat request' }), {
+    // Ensure error response is properly formatted
+    return new Response(JSON.stringify({ 
+      error: error instanceof Error ? error.message : 'Failed to process chat request' 
+    }), {
       status: 500,
       headers: {
         'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'POST, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type',
       },
     });
   }
