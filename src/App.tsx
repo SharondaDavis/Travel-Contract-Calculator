@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useMemo } from 'react';
-import { Calculator, CheckCircle, AlertCircle, Star, Lightbulb, Trash2, Plus } from 'lucide-react';
+import { Calculator, CheckCircle, AlertCircle, Star, Trash2, Plus } from 'lucide-react';
 import { useContractScore } from './hooks/useContractScore';
 import { BarChart as RechartsBarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { Tab } from '@headlessui/react';
@@ -243,20 +243,6 @@ function App() {
       details.push({ positive: false, message: 'High expenses' });
     }
     return details;
-  };
-
-  const getContractTips = (assignment: Assignment) => {
-    const tips: string[] = [];
-    if (parseFloat(calculateTotalContractValue(assignment)) > 50000) {
-      tips.push('Consider negotiating for a higher salary');
-    }
-    if (parseFloat(calculateNetIncome(assignment)) > 1000) {
-      tips.push('You may be able to afford a more expensive lifestyle');
-    }
-    if (calculateExpenses(assignment) < 500) {
-      tips.push('You may be able to save more money');
-    }
-    return tips;
   };
 
   const handleDeleteAssignment = (id: string) => {
@@ -1061,18 +1047,6 @@ function App() {
                               </div>
                             ))}
                           </div>
-                        </div>
-                        <div className="hidden md:block w-px h-24 bg-gray-200"></div>
-                        <div className="hidden md:block">
-                          <h5 className="font-medium mb-2 text-gray-900">Quick Tips</h5>
-                          <ul className="space-y-1 text-sm">
-                            {getContractTips(assignment).map((tip, index) => (
-                              <li key={index} className="flex items-center gap-2 text-gray-600">
-                                <Lightbulb className="w-4 h-4 text-yellow-500" />
-                                {tip}
-                              </li>
-                            ))}
-                          </ul>
                         </div>
                       </div>
                     </div>
