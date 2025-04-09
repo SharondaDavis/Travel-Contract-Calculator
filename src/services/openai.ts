@@ -13,11 +13,21 @@ interface ChatContext {
 export async function chatWithOpenAI(messages: Message[], context: ChatContext): Promise<string> {
   try {
     // Get the API key from IndexedDB
+    console.log('Fetching API key from IndexedDB...');
     const settings = await db.settings.get('openai_api_key');
+    console.log('API key settings:', settings);
+    
     if (!settings) {
+      console.error('No API key found in IndexedDB');
       throw new Error('OpenAI API key not configured');
     }
 
+    if (!settings.value) {
+      console.error('API key value is empty');
+      throw new Error('OpenAI API key not configured');
+    }
+
+    console.log('Making request to /api/chat...');
     const response = await fetch('/api/chat', {
       method: 'POST',
       headers: {

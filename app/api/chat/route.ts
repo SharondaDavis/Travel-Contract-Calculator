@@ -6,7 +6,11 @@ export async function POST(request: Request) {
   try {
     console.log('Chat API route hit');
     const { messages, context, apiKey } = await request.json();
-    console.log('Request data received:', { messages, context: context ? 'exists' : 'missing', apiKey: apiKey ? 'exists' : 'missing' });
+    console.log('Request data received:', { 
+      messages: messages ? 'exists' : 'missing', 
+      context: context ? 'exists' : 'missing', 
+      apiKey: apiKey ? 'exists' : 'missing' 
+    });
 
     if (!apiKey) {
       console.log('No API key provided');
@@ -25,7 +29,7 @@ export async function POST(request: Request) {
       apiKey: apiKey
     });
 
-    // Prepare the system message with contract context
+    // Construct system message
     const systemMessage = {
       role: 'system',
       content: `You are a helpful assistant specialized in travel nurse contracts. You have access to ${context.totalContracts} contracts with detailed information about facilities, rates, benefits, and other important factors. Use this information to help the user make informed decisions about their travel nursing opportunities.
@@ -48,15 +52,10 @@ Always format your responses using Markdown for better readability. Use:
 Keep responses concise but informative.`
     };
 
-    // Add the contract data as context with a clear header
+    // Add context message
     const contextMessage = {
       role: 'system',
-      content: `CURRENT ACTIVE CONTRACTS (${context.totalContracts} total):
-${JSON.stringify(context.contracts, null, 2)}
-
-REMEMBER: These are the ONLY contracts that exist. Any contract not listed above has been either:
-1. Renamed (in which case it will appear with its new name in the list above)
-2. Removed completely (in which case it should not be referenced at all)`
+      content: `Here is the contract data: ${JSON.stringify(context.contracts)}`
     };
 
     console.log('Sending request to OpenAI');
