@@ -206,8 +206,23 @@ function App() {
     const totalValue = parseFloat(calculateTotalContractValue(assignment));
     const weeklyNet = parseFloat(calculateNetIncome(assignment));
     const expenses = calculateExpenses(assignment);
-    const ratio = taxableRatio(assignment);
-    return (totalValue + weeklyNet - expenses + parseFloat(ratio)) / 100;
+    
+    // Calculate base score from 1-5
+    let score = 1; // Start with minimum score
+    
+    // Add points based on contract value
+    if (totalValue > 100000) score += 2;
+    else if (totalValue > 50000) score += 1;
+    
+    // Add points based on weekly net income
+    if (weeklyNet > 2000) score += 2;
+    else if (weeklyNet > 1000) score += 1;
+    
+    // Subtract points for high expenses
+    if (expenses > 1000) score -= 1;
+    
+    // Ensure score stays within 1-5 range
+    return Math.max(1, Math.min(5, score));
   };
 
   const getRatingDetails = (assignment: Assignment) => {
@@ -350,7 +365,7 @@ function App() {
                             name="facilityName"
                             value={assignment.facilityName}
                             onChange={(e) => handleInputChange(e, assignment.id)}
-                            className="w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 transition-colors duration-200 bg-white"
+                            className="w-full rounded-lg border-2 border-gray-400 shadow-sm focus:border-2 focus:border-green-600 focus:ring-green-500 transition-colors duration-200 bg-white hover:border-gray-500 px-4 py-2"
                             placeholder="Enter facility name"
                           />
                           {fieldValidation[`${assignment.id}-facilityName`] && (
@@ -372,7 +387,7 @@ function App() {
                             name="location"
                             value={assignment.location}
                             onChange={(e) => handleInputChange(e, assignment.id)}
-                            className="w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 transition-colors duration-200 bg-white"
+                            className="w-full rounded-lg border-2 border-gray-400 shadow-sm focus:border-2 focus:border-green-600 focus:ring-green-500 transition-colors duration-200 bg-white hover:border-gray-500 px-4 py-2"
                             placeholder="City, State"
                           />
                           {fieldValidation[`${assignment.id}-location`] && (
@@ -394,7 +409,7 @@ function App() {
                             name="specialty"
                             value={assignment.specialty}
                             onChange={(e) => handleInputChange(e, assignment.id)}
-                            className="w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 transition-colors duration-200 bg-white"
+                            className="w-full rounded-lg border-2 border-gray-400 shadow-sm focus:border-2 focus:border-green-600 focus:ring-green-500 transition-colors duration-200 bg-white hover:border-gray-500 px-4 py-2"
                             placeholder="e.g., ICU, Med-Surg, ER"
                           />
                           {fieldValidation[`${assignment.id}-specialty`] && (
@@ -415,7 +430,7 @@ function App() {
                             name="shiftType"
                             value={assignment.shiftType}
                             onChange={(e) => handleInputChange(e, assignment.id)}
-                            className="w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 transition-colors duration-200 bg-white"
+                            className="w-full rounded-lg border-2 border-gray-400 shadow-sm focus:border-2 focus:border-green-600 focus:ring-green-500 transition-colors duration-200 bg-white hover:border-gray-500 px-4 py-2"
                           >
                             <option value="">Select shift type</option>
                             <option value="days">Days</option>
@@ -441,7 +456,7 @@ function App() {
                             name="contractLength"
                             value={assignment.contractLength}
                             onChange={(e) => handleInputChange(e, assignment.id)}
-                            className="w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 transition-colors duration-200 bg-white"
+                            className="w-full rounded-lg border-2 border-gray-400 shadow-sm focus:border-2 focus:border-green-600 focus:ring-green-500 transition-colors duration-200 bg-white hover:border-gray-500 px-4 py-2"
                             placeholder="13"
                           />
                           {fieldValidation[`${assignment.id}-contractLength`] && (
@@ -463,7 +478,7 @@ function App() {
                             name="startDate"
                             value={assignment.startDate}
                             onChange={(e) => handleInputChange(e, assignment.id)}
-                            className="w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 transition-colors duration-200 bg-white"
+                            className="w-full rounded-lg border-2 border-gray-400 shadow-sm focus:border-2 focus:border-green-600 focus:ring-green-500 transition-colors duration-200 bg-white hover:border-gray-500 px-4 py-2"
                           />
                           {fieldValidation[`${assignment.id}-startDate`] && (
                             <div className="text-green-500 mt-1">
@@ -492,7 +507,7 @@ function App() {
                             name="hourlyRate"
                             value={assignment.hourlyRate}
                             onChange={(e) => handleInputChange(e, assignment.id)}
-                            className="w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 transition-colors duration-200 bg-white"
+                            className="w-full rounded-lg border-2 border-gray-400 shadow-sm focus:border-2 focus:border-green-600 focus:ring-green-500 transition-colors duration-200 bg-white hover:border-gray-500 px-4 py-2"
                             placeholder="0.00"
                           />
                           {fieldValidation[`${assignment.id}-hourlyRate`] && (
@@ -514,7 +529,7 @@ function App() {
                             name="weeklyHours"
                             value={assignment.weeklyHours}
                             onChange={(e) => handleInputChange(e, assignment.id)}
-                            className="w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 transition-colors duration-200 bg-white"
+                            className="w-full rounded-lg border-2 border-gray-400 shadow-sm focus:border-2 focus:border-green-600 focus:ring-green-500 transition-colors duration-200 bg-white hover:border-gray-500 px-4 py-2"
                             placeholder="36"
                           />
                           {fieldValidation[`${assignment.id}-weeklyHours`] && (
@@ -537,7 +552,7 @@ function App() {
                                 name="housingStipend"
                                 value={assignment.housingStipend}
                                 onChange={(e) => handleInputChange(e, assignment.id)}
-                                className="w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 transition-colors duration-200 bg-white"
+                                className="w-full rounded-lg border-2 border-gray-400 shadow-sm focus:border-2 focus:border-green-600 focus:ring-green-500 transition-colors duration-200 bg-white hover:border-gray-500 px-4 py-2"
                                 placeholder="0.00"
                               />
                               {fieldValidation[`${assignment.id}-housingStipend`] && (
@@ -556,7 +571,7 @@ function App() {
                                 name="mealsStipend"
                                 value={assignment.mealsStipend}
                                 onChange={(e) => handleInputChange(e, assignment.id)}
-                                className="w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 transition-colors duration-200 bg-white"
+                                className="w-full rounded-lg border-2 border-gray-400 shadow-sm focus:border-2 focus:border-green-600 focus:ring-green-500 transition-colors duration-200 bg-white hover:border-gray-500 px-4 py-2"
                                 placeholder="0.00"
                               />
                               {fieldValidation[`${assignment.id}-mealsStipend`] && (
@@ -575,7 +590,7 @@ function App() {
                                 name="incidentalsStipend"
                                 value={assignment.incidentalsStipend}
                                 onChange={(e) => handleInputChange(e, assignment.id)}
-                                className="w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 transition-colors duration-200 bg-white"
+                                className="w-full rounded-lg border-2 border-gray-400 shadow-sm focus:border-2 focus:border-green-600 focus:ring-green-500 transition-colors duration-200 bg-white hover:border-gray-500 px-4 py-2"
                                 placeholder="0.00"
                               />
                               {fieldValidation[`${assignment.id}-incidentalsStipend`] && (
@@ -600,7 +615,7 @@ function App() {
                                 name="signOnBonus"
                                 value={assignment.signOnBonus}
                                 onChange={(e) => handleInputChange(e, assignment.id)}
-                                className="w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 transition-colors duration-200 bg-white"
+                                className="w-full rounded-lg border-2 border-gray-400 shadow-sm focus:border-2 focus:border-green-600 focus:ring-green-500 transition-colors duration-200 bg-white hover:border-gray-500 px-4 py-2"
                                 placeholder="0.00"
                               />
                               {fieldValidation[`${assignment.id}-signOnBonus`] && (
@@ -619,7 +634,7 @@ function App() {
                                 name="completionBonus"
                                 value={assignment.completionBonus}
                                 onChange={(e) => handleInputChange(e, assignment.id)}
-                                className="w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 transition-colors duration-200 bg-white"
+                                className="w-full rounded-lg border-2 border-gray-400 shadow-sm focus:border-2 focus:border-green-600 focus:ring-green-500 transition-colors duration-200 bg-white hover:border-gray-500 px-4 py-2"
                                 placeholder="0.00"
                               />
                               {fieldValidation[`${assignment.id}-completionBonus`] && (
@@ -650,7 +665,7 @@ function App() {
                             name="transportationType"
                             value={assignment.transportationType}
                             onChange={(e) => handleInputChange(e, assignment.id)}
-                            className="w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 transition-colors duration-200 bg-white"
+                            className="w-full rounded-lg border-2 border-gray-400 shadow-sm focus:border-2 focus:border-green-600 focus:ring-green-500 transition-colors duration-200 bg-white hover:border-gray-500 px-4 py-2"
                           >
                             <option value="public">Public Transportation</option>
                             <option value="rideshare">Rideshare (Uber/Lyft)</option>
@@ -676,7 +691,7 @@ function App() {
                               name="publicTransportCost"
                               value={assignment.publicTransportCost}
                               onChange={(e) => handleInputChange(e, assignment.id)}
-                              className="w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 transition-colors duration-200 bg-white"
+                              className="w-full rounded-lg border-2 border-gray-400 shadow-sm focus:border-2 focus:border-green-600 focus:ring-green-500 transition-colors duration-200 bg-white hover:border-gray-500 px-4 py-2"
                               placeholder="0.00"
                             />
                             {fieldValidation[`${assignment.id}-publicTransportCost`] && (
@@ -700,7 +715,7 @@ function App() {
                               name="rideshareExpenses"
                               value={assignment.rideshareExpenses}
                               onChange={(e) => handleInputChange(e, assignment.id)}
-                              className="w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 transition-colors duration-200 bg-white"
+                              className="w-full rounded-lg border-2 border-gray-400 shadow-sm focus:border-2 focus:border-green-600 focus:ring-green-500 transition-colors duration-200 bg-white hover:border-gray-500 px-4 py-2"
                               placeholder="0.00"
                             />
                             {fieldValidation[`${assignment.id}-rideshareExpenses`] && (
@@ -725,7 +740,7 @@ function App() {
                                 name="commuteDistance"
                                 value={assignment.commuteDistance}
                                 onChange={(e) => handleInputChange(e, assignment.id)}
-                                className="w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 transition-colors duration-200 bg-white"
+                                className="w-full rounded-lg border-2 border-gray-400 shadow-sm focus:border-2 focus:border-green-600 focus:ring-green-500 transition-colors duration-200 bg-white hover:border-gray-500 px-4 py-2"
                                 placeholder="0.00"
                               />
                               {fieldValidation[`${assignment.id}-commuteDistance`] && (
@@ -746,7 +761,7 @@ function App() {
                                 name="fuelCostPerGallon"
                                 value={assignment.fuelCostPerGallon}
                                 onChange={(e) => handleInputChange(e, assignment.id)}
-                                className="w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 transition-colors duration-200 bg-white"
+                                className="w-full rounded-lg border-2 border-gray-400 shadow-sm focus:border-2 focus:border-green-600 focus:ring-green-500 transition-colors duration-200 bg-white hover:border-gray-500 px-4 py-2"
                                 placeholder="0.00"
                               />
                               {fieldValidation[`${assignment.id}-fuelCostPerGallon`] && (
@@ -767,7 +782,7 @@ function App() {
                                 name="vehicleMpg"
                                 value={assignment.vehicleMpg}
                                 onChange={(e) => handleInputChange(e, assignment.id)}
-                                className="w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 transition-colors duration-200 bg-white"
+                                className="w-full rounded-lg border-2 border-gray-400 shadow-sm focus:border-2 focus:border-green-600 focus:ring-green-500 transition-colors duration-200 bg-white hover:border-gray-500 px-4 py-2"
                                 placeholder="25"
                               />
                               {fieldValidation[`${assignment.id}-vehicleMpg`] && (
@@ -788,7 +803,7 @@ function App() {
                                 name="parkingCost"
                                 value={assignment.parkingCost}
                                 onChange={(e) => handleInputChange(e, assignment.id)}
-                                className="w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 transition-colors duration-200 bg-white"
+                                className="w-full rounded-lg border-2 border-gray-400 shadow-sm focus:border-2 focus:border-green-600 focus:ring-green-500 transition-colors duration-200 bg-white hover:border-gray-500 px-4 py-2"
                                 placeholder="0.00"
                               />
                               {fieldValidation[`${assignment.id}-parkingCost`] && (
@@ -820,7 +835,7 @@ function App() {
                             name="rentEstimate"
                             value={assignment.rentEstimate}
                             onChange={(e) => handleInputChange(e, assignment.id)}
-                            className="w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 transition-colors duration-200 bg-white"
+                            className="w-full rounded-lg border-2 border-gray-400 shadow-sm focus:border-2 focus:border-green-600 focus:ring-green-500 transition-colors duration-200 bg-white hover:border-gray-500 px-4 py-2"
                             placeholder="0.00"
                           />
                           {fieldValidation[`${assignment.id}-rentEstimate`] && (
@@ -842,7 +857,7 @@ function App() {
                             name="utilitiesEstimate"
                             value={assignment.utilitiesEstimate}
                             onChange={(e) => handleInputChange(e, assignment.id)}
-                            className="w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 transition-colors duration-200 bg-white"
+                            className="w-full rounded-lg border-2 border-gray-400 shadow-sm focus:border-2 focus:border-green-600 focus:ring-green-500 transition-colors duration-200 bg-white hover:border-gray-500 px-4 py-2"
                             placeholder="0.00"
                           />
                           {fieldValidation[`${assignment.id}-utilitiesEstimate`] && (
@@ -864,7 +879,7 @@ function App() {
                             name="groceriesEstimate"
                             value={assignment.groceriesEstimate}
                             onChange={(e) => handleInputChange(e, assignment.id)}
-                            className="w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 transition-colors duration-200 bg-white"
+                            className="w-full rounded-lg border-2 border-gray-400 shadow-sm focus:border-2 focus:border-green-600 focus:ring-green-500 transition-colors duration-200 bg-white hover:border-gray-500 px-4 py-2"
                             placeholder="0.00"
                           />
                           {fieldValidation[`${assignment.id}-groceriesEstimate`] && (
@@ -879,6 +894,40 @@ function App() {
                       </div>
                     </section>
                   </div>
+
+                  {/* Calculation Explanation Section */}
+                  <section className="bg-blue-50 rounded-xl shadow-sm p-6 border-2 border-blue-100 mb-6">
+                    <h3 className="text-xl font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                      <Calculator className="h-5 w-5 text-blue-600" />
+                      How We Calculate Your Contract Value
+                    </h3>
+                    <div className="space-y-4 text-gray-600">
+                      <div>
+                        <h4 className="font-medium text-blue-900 mb-1">1. Taxable Income</h4>
+                        <p>Base hourly rate × Hours per week = Weekly taxable income</p>
+                      </div>
+                      <div>
+                        <h4 className="font-medium text-blue-900 mb-1">2. Non-Taxable Income (Stipends)</h4>
+                        <p>Housing stipend + Meals & per diem + Other stipends = Weekly non-taxable income</p>
+                      </div>
+                      <div>
+                        <h4 className="font-medium text-blue-900 mb-1">3. Weekly Expenses</h4>
+                        <p>Housing + Travel + Meals + Other expenses = Total weekly expenses</p>
+                      </div>
+                      <div>
+                        <h4 className="font-medium text-blue-900 mb-1">4. Estimated Tax Impact</h4>
+                        <p>We estimate approximately 30% of your taxable income will go to taxes (actual rate may vary based on your tax situation)</p>
+                      </div>
+                      <div>
+                        <h4 className="font-medium text-blue-900 mb-1">5. Weekly Net Income</h4>
+                        <p>(Taxable income - Estimated taxes + Non-taxable income) - Total expenses = Weekly net income</p>
+                      </div>
+                      <div>
+                        <h4 className="font-medium text-blue-900 mb-1">6. Total Contract Value</h4>
+                        <p>(Weekly net income × Contract duration) + Sign-on bonus + Completion bonus = Total contract value</p>
+                      </div>
+                    </div>
+                  </section>
 
                   {/* Financial Summary Section - Moved to bottom */}
                   <section className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl shadow-lg p-6 text-white">
@@ -938,45 +987,88 @@ function App() {
                     </div>
 
                     {/* Contract Rating */}
-                    <div className="bg-white/10 rounded-lg p-6">
-                      <h4 className="text-lg font-medium mb-4">Contract Rating</h4>
+                    <div className="bg-white rounded-lg p-6 shadow-sm">
+                      <h4 className="text-lg font-medium mb-4 text-gray-900">Contract Rating</h4>
                       <div className="flex items-center gap-4">
                         <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-2">
-                            {[1, 2, 3, 4, 5].map((star) => (
-                              <Star
-                                key={star}
-                                className={`w-6 h-6 ${
-                                  getRatingScore(assignment) >= star
-                                    ? 'fill-yellow-400 text-yellow-400'
-                                    : 'text-white/30'
-                                }`}
-                              />
-                            ))}
-                            <span className="ml-2 text-lg font-semibold">
-                              {getRatingScore(assignment).toFixed(1)}/5.0
-                            </span>
-                          </div>
-                          <div className="space-y-2">
-                            {getRatingDetails(assignment).map((detail, index) => (
-                              <div key={index} className="flex items-center gap-2 text-sm">
-                                {detail.positive ? (
-                                  <CheckCircle className="w-4 h-4 text-green-400" />
+                          <div>
+                            <div className="flex items-center mb-1">
+                              <div className="flex gap-1">
+                                {[1, 2, 3, 4, 5].map((star) => {
+                                  const hasRequiredFields = assignment.hourlyRate && assignment.weeklyHours && assignment.contractLength;
+                                  return (
+                                    <Star
+                                      key={star}
+                                      className={`w-5 h-5 transition-colors duration-200 ${
+                                        hasRequiredFields
+                                          ? getRatingScore(assignment) >= star
+                                            ? 'text-yellow-500 fill-yellow-500'
+                                            : 'text-gray-300'
+                                          : 'text-gray-200'
+                                      }`}
+                                    />
+                                  );
+                                })}
+                              </div>
+                              {assignment.hourlyRate && assignment.weeklyHours && assignment.contractLength ? (
+                                <div className="ml-3 flex items-baseline">
+                                  <span className="text-xl font-semibold text-gray-900">{getRatingScore(assignment)}</span>
+                                  <span className="text-sm text-gray-500 ml-1">/5</span>
+                                </div>
+                              ) : null}
+                            </div>
+                            
+                            {!assignment.hourlyRate || !assignment.weeklyHours || !assignment.contractLength ? (
+                              <p className="text-sm text-gray-600 flex items-center gap-1">
+                                <span className="inline-block w-1.5 h-1.5 rounded-full bg-yellow-500"></span>
+                                Complete {[
+                                  !assignment.hourlyRate && 'pay rate',
+                                  !assignment.weeklyHours && 'hours',
+                                  !assignment.contractLength && 'duration'
+                                ].filter(Boolean).join(' + ')} for rating
+                              </p>
+                            ) : (
+                              <p className="text-sm mt-1 flex items-center gap-1.5">
+                                {getRatingScore(assignment) >= 4 ? (
+                                  <>
+                                    <span className="inline-block w-1.5 h-1.5 rounded-full bg-yellow-500"></span>
+                                    <span className="text-yellow-700 font-medium">Excellent offer</span>
+                                  </>
+                                ) : getRatingScore(assignment) >= 3 ? (
+                                  <>
+                                    <span className="inline-block w-1.5 h-1.5 rounded-full bg-yellow-500"></span>
+                                    <span className="text-yellow-600">Good offer</span>
+                                  </>
                                 ) : (
-                                  <AlertCircle className="w-4 h-4 text-yellow-400" />
+                                  <>
+                                    <span className="inline-block w-1.5 h-1.5 rounded-full bg-gray-400"></span>
+                                    <span className="text-gray-600">Consider negotiating</span>
+                                  </>
+                                )}
+                              </p>
+                            )}
+                          </div>
+                          
+                          <div className="mt-4 space-y-2">
+                            {getRatingDetails(assignment).map((detail, index) => (
+                              <div key={index} className="flex items-center gap-2 text-sm text-gray-700">
+                                {detail.positive ? (
+                                  <CheckCircle className="w-4 h-4 text-green-500" />
+                                ) : (
+                                  <AlertCircle className="w-4 h-4 text-yellow-500" />
                                 )}
                                 {detail.message}
                               </div>
                             ))}
                           </div>
                         </div>
-                        <div className="hidden md:block w-px h-24 bg-white/20"></div>
+                        <div className="hidden md:block w-px h-24 bg-gray-200"></div>
                         <div className="hidden md:block">
-                          <h5 className="font-medium mb-2">Quick Tips</h5>
+                          <h5 className="font-medium mb-2 text-gray-900">Quick Tips</h5>
                           <ul className="space-y-1 text-sm">
                             {getContractTips(assignment).map((tip, index) => (
-                              <li key={index} className="flex items-center gap-2">
-                                <Lightbulb className="w-4 h-4 text-yellow-400" />
+                              <li key={index} className="flex items-center gap-2 text-gray-600">
+                                <Lightbulb className="w-4 h-4 text-yellow-500" />
                                 {tip}
                               </li>
                             ))}
