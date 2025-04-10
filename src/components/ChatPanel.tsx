@@ -9,6 +9,7 @@ import { SettingsPanel } from './SettingsPanel';
 interface Message {
   role: 'user' | 'assistant';
   content: string;
+  isLoading?: boolean; // Add isLoading flag to indicate streaming status
 }
 
 interface ChatPanelProps {
@@ -42,20 +43,6 @@ const promptSuggestions = [
     prompt: "Tell me about the cost of living, safety, and quality of life in these locations."
   }
 ];
-
-// Thinking indicator component with gradient animation
-const ThinkingIndicator = () => (
-  <div className="flex justify-start">
-    <div className="max-w-[80%] rounded-lg p-4 bg-gray-100 text-gray-800">
-      <div className="flex items-center space-x-2">
-        <div className="w-32 h-6 rounded-full bg-gradient-to-r from-gray-200 via-gray-300 to-gray-200 animate-pulse">
-          <div className="w-full h-full rounded-full bg-gradient-to-r from-blue-300 via-purple-300 to-blue-300 animate-gradient"></div>
-        </div>
-        <span className="text-gray-500 animate-pulse">Thinking carefully...</span>
-      </div>
-    </div>
-  </div>
-);
 
 export function ChatPanel({ contracts, onClose }: ChatPanelProps) {
   const [messages, setMessages] = useState<Message[]>([
@@ -91,6 +78,20 @@ export function ChatPanel({ contracts, onClose }: ChatPanelProps) {
         background-size: 200% 200%;
         animation: gradient 2s ease infinite;
         opacity: 0.7;
+      }
+      .loading-message {
+        position: relative;
+        overflow: hidden;
+      }
+      .loading-message::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(to right, #e0f2fe, #bfdbfe, #93c5fd, #bfdbfe, #e0f2fe);
+        background-size: 200% 200%;
+        animation: gradient 2s ease infinite;
+        opacity: 0.7;
+        border-radius: 0.5rem;
       }
     `;
     document.head.appendChild(style);
@@ -143,7 +144,7 @@ export function ChatPanel({ contracts, onClose }: ChatPanelProps) {
 
   useEffect(() => {
     scrollToBottom();
-  }, [messages, isLoading]);
+  }, [messages]);
 
   const handleSuggestionClick = (prompt: string) => {
     setInput(prompt);
@@ -173,27 +174,99 @@ export function ChatPanel({ contracts, onClose }: ChatPanelProps) {
         timestamp: new Date()
       });
 
-      const response = await chatWithOpenAI(
+      // Create a temporary message for streaming updates with isLoading flag
+      const tempMessage: Message = {
+        role: 'assistant',
+        content: '',
+        isLoading: true
+      };
+      
+      // Add the temporary message with loading state
+      setMessages(prev => [...prev, tempMessage]);
+
+      // Create a function to update the temporary message with streamed content
+      const updateTempMessage = (content: string, stillLoading = false) => {
+        setMessages(prev => {
+          const newMessages = [...prev];
+          const lastIndex = newMessages.length - 1;
+          newMessages[lastIndex] = {
+            ...newMessages[lastIndex],
+            content: content,
+            isLoading: stillLoading
+          };
+          return newMessages;
+        });
+        
+        scrollToBottom();
+      };
+
+      // Use streaming with callbacks
+      await chatWithOpenAI(
         [...messages, userMessage],
         {
           contracts,
           totalContracts: contracts.length
+        },
+        {
+          onChunk: (chunk) => {
+            // For each chunk, update the temporary message
+            setMessages(prev => {
+              const newMessages = [...prev];
+              const lastIndex = newMessages.length - 1;
+              // Add the new chunk to the current content
+              const currentContent = newMessages[lastIndex].content;
+              newMessages[lastIndex] = {
+                ...newMessages[lastIndex],
+                content: currentContent + chunk,
+                isLoading: true // Keep loading state while streaming
+              };
+              return newMessages;
+            });
+            // Scroll to bottom with each update
+            scrollToBottom();
+          },
+          onComplete: async (fullContent) => {
+            // When complete, ensure we have the full content and remove loading state
+            updateTempMessage(fullContent, false);
+            
+            // Save assistant message to IndexedDB
+            await db.chat_messages.add({
+              role: 'assistant',
+              content: fullContent,
+              timestamp: new Date()
+            });
+            
+            setIsLoading(false);
+          },
+          onError: async (error) => {
+            console.error('Streaming error:', error);
+            
+            let errorContent = '';
+            if (error instanceof Error) {
+              if (error.message === 'OpenAI API key not configured') {
+                errorContent = 'To use the chat feature, you need to configure your OpenAI API key first. Would you like to do that now?';
+                setShowSettings(true);
+              } else {
+                errorContent = error.message;
+              }
+            } else {
+              errorContent = 'Sorry, I encountered an error. Please try again.';
+            }
+            
+            // Update the temporary message with the error and remove loading state
+            updateTempMessage(errorContent, false);
+            
+            // Save error message to IndexedDB
+            await db.chat_messages.add({
+              role: 'assistant',
+              content: errorContent,
+              timestamp: new Date()
+            });
+            
+            setIsLoading(false);
+          }
         }
       );
-
-      const assistantMessage: Message = {
-        role: 'assistant',
-        content: response
-      };
-
-      setMessages(prev => [...prev, assistantMessage]);
-
-      // Save assistant message to IndexedDB
-      await db.chat_messages.add({
-        role: 'assistant',
-        content: response,
-        timestamp: new Date()
-      });
     } catch (error) {
       let errorContent = '';
       if (error instanceof Error) {
@@ -219,10 +292,10 @@ export function ChatPanel({ contracts, onClose }: ChatPanelProps) {
         content: errorContent,
         timestamp: new Date()
       });
-    } finally {
+      
       setIsLoading(false);
     }
-  }, [input, isLoading, messages, contracts]);
+  }, [input, isLoading, messages, contracts, scrollToBottom]);
 
   return (
     <>
@@ -249,12 +322,14 @@ export function ChatPanel({ contracts, onClose }: ChatPanelProps) {
                 className={`max-w-[80%] rounded-lg p-3 ${
                   message.role === 'user'
                     ? 'bg-blue-500 text-white'
-                    : 'bg-gray-100 text-gray-800'
+                    : message.isLoading && !message.content 
+                      ? 'loading-message bg-gray-100 min-h-[60px] min-w-[100px]' 
+                      : 'bg-gray-100 text-gray-800'
                 }`}
               >
                 {message.role === 'user' ? (
                   message.content
-                ) : (
+                ) : message.content ? (
                   <div className="prose prose-sm max-w-none">
                     <ReactMarkdown
                       components={{
@@ -274,12 +349,14 @@ export function ChatPanel({ contracts, onClose }: ChatPanelProps) {
                       {message.content}
                     </ReactMarkdown>
                   </div>
+                ) : (
+                  <div className="flex items-center justify-center">
+                    <span className="text-gray-700 font-medium text-sm z-10">thinking through this carefully...</span>
+                  </div>
                 )}
               </div>
             </div>
           ))}
-
-          {isLoading && <ThinkingIndicator />}
           
           <div ref={messagesEndRef} />
         </div>
