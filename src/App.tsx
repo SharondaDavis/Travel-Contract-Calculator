@@ -1,8 +1,12 @@
 import React, { useState, useCallback, useMemo } from 'react';
-import { Calculator, CheckCircle, AlertCircle, Star, Lightbulb, Trash2, Plus } from 'lucide-react';
+import { Calculator, CheckCircle, AlertCircle, Star, Lightbulb, Trash2, Plus, MessageSquare, Settings } from 'lucide-react';
 import { useContractScore } from './hooks/useContractScore';
 import { BarChart as RechartsBarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { Tab } from '@headlessui/react';
+import { ContractStorageButton } from './components/ContractStorageButton';
+import { ChatPanel } from './components/ChatPanel';
+import { SettingsPanel } from './components/SettingsPanel';
+import { toast, Toaster } from 'react-hot-toast';
 
 interface Assignment {
   id: string;
@@ -12,29 +16,36 @@ interface Assignment {
   shiftType: string;
   contractLength: string;
   startDate: string;
+  endDate: string;
   hourlyRate: string;
   weeklyHours: string;
   housingStipend: string;
-  mealsStipend: string;
-  incidentalsStipend: string;
-  housingExpenses: string;
-  healthInsurance: string;
-  transportationType: string;
-  publicTransportCost: string;
-  rideshareExpenses: string;
-  parkingCost: string;
-  commuteDistance: string;
-  fuelCostPerGallon: string;
-  vehicleMpg: string;
-  rentEstimate: string;
-  utilitiesEstimate: string;
-  groceriesEstimate: string;
-  travelExpenses: string;
+  mealStipend: string;
+  transportationStipend: string;
+  otherStipend: string;
+  transportationCost: string;
+  housingCost: string;
+  foodCost: string;
+  otherCost: string;
   signOnBonus: string;
   completionBonus: string;
+  referralBonus: string;
+  otherBonus: string;
+  rideshareExpenses: string;
+  commuteDistance: string;
+  fuelCostPerGallon: string;
+  parkingCost: string;
+  data?: {
+    housing_data?: any;
+    transportation_data?: any;
+    tax_data?: any;
+    [key: string]: any;
+  };
   plannedTimeOff: string[];
   seasonality: string;
 }
+
+export type { Assignment };
 
 const initialAssignment: Assignment = {
   id: '1',
@@ -44,34 +55,38 @@ const initialAssignment: Assignment = {
   shiftType: '',
   contractLength: '',
   startDate: '',
+  endDate: '',
   hourlyRate: '',
   weeklyHours: '36',
   housingStipend: '',
-  mealsStipend: '',
-  incidentalsStipend: '',
-  housingExpenses: '',
-  healthInsurance: '',
-  transportationType: 'public',
-  publicTransportCost: '',
-  rideshareExpenses: '',
-  parkingCost: '',
-  commuteDistance: '',
-  fuelCostPerGallon: '',
-  vehicleMpg: '25',
-  rentEstimate: '',
-  utilitiesEstimate: '',
-  groceriesEstimate: '',
-  travelExpenses: '',
+  mealStipend: '',
+  transportationStipend: '',
+  otherStipend: '',
+  transportationCost: '',
+  housingCost: '',
+  foodCost: '',
+  otherCost: '',
   signOnBonus: '',
   completionBonus: '',
+  referralBonus: '',
+  otherBonus: '',
+  rideshareExpenses: '',
+  commuteDistance: '',
+  fuelCostPerGallon: '',
+  parkingCost: '',
+  data: {},
   plannedTimeOff: [],
   seasonality: 'summer'
 };
 
 function App() {
   const [assignments, setAssignments] = useState<Assignment[]>([initialAssignment]);
-  const [activeAssignment, setActiveAssignment] = useState<string>('1');
+  const [activeAssignments, setActiveAssignments] = useState<Set<string>>(new Set([initialAssignment.id]));
+  const [activeComparisonContracts, setActiveComparisonContracts] = useState<Set<string>>(new Set());
   const [view, setView] = useState<'details' | 'comparison'>('details');
+  const [showChat, setShowChat] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+  const [selectedContractId, setSelectedContractId] = useState<string>(initialAssignment.id);
 
   // Track field validation
   const [fieldValidation, setFieldValidation] = useState<{ [key: string]: boolean }>({});
@@ -90,8 +105,9 @@ function App() {
 
   const addNewAssignment = () => {
     const newId = (assignments.length + 1).toString();
-    setAssignments(prev => [...prev, { ...initialAssignment, id: newId }]);
-    setActiveAssignment(newId);
+    const newAssignment = { ...initialAssignment, id: newId };
+    setAssignments(prev => [...prev, newAssignment]);
+    setSelectedContractId(newId);
   };
 
   const calculateTaxableIncome = (assignment: Assignment) => {
@@ -102,18 +118,19 @@ function App() {
 
   const calculateNonTaxableIncome = (assignment: Assignment) => {
     const housing = parseFloat(assignment.housingStipend) || 0;
-    const meals = parseFloat(assignment.mealsStipend) || 0;
-    const incidentals = parseFloat(assignment.incidentalsStipend) || 0;
-    return housing + meals + incidentals;
+    const meals = parseFloat(assignment.mealStipend) || 0;
+    const transportation = parseFloat(assignment.transportationStipend) || 0;
+    const other = parseFloat(assignment.otherStipend) || 0;
+    return housing + meals + transportation + other;
   };
 
   const calculateTransportationExpenses = (assignment: Assignment) => {
-    const publicTransport = parseFloat(assignment.publicTransportCost) || 0;
-    const rideshare = parseFloat(assignment.rideshareExpenses) || 0;
-    const parking = parseFloat(assignment.parkingCost) || 0;
-    const distance = parseFloat(assignment.commuteDistance) || 0;
-    const fuelCostPerGallon = parseFloat(assignment.fuelCostPerGallon) || 0;
-    const mpg = parseFloat(assignment.vehicleMpg) || 25;
+    const publicTransport = parseFloat(assignment.transportationCost) || 0;
+    const rideshare = parseFloat(assignment.transportationStipend) || 0;
+    const parking = parseFloat(assignment.housingCost) || 0;
+    const distance = parseFloat(assignment.housingCost) || 0;
+    const fuelCostPerGallon = parseFloat(assignment.foodCost) || 0;
+    const mpg = parseFloat(assignment.transportationStipend) || 25;
     
     // Calculate fuel expenses based on distance, MPG, and cost per gallon (assuming 5 work days)
     // Formula: (distance * 2 * 5 * fuelCostPerGallon) / MPG
@@ -123,16 +140,16 @@ function App() {
   };
 
   const calculateLivingExpenses = (assignment: Assignment) => {
-    const rent = parseFloat(assignment.rentEstimate) || 0;
-    const utilities = parseFloat(assignment.utilitiesEstimate) || 0;
-    const groceries = parseFloat(assignment.groceriesEstimate) || 0;
+    const rent = parseFloat(assignment.housingCost) || 0;
+    const utilities = parseFloat(assignment.foodCost) || 0;
+    const groceries = parseFloat(assignment.otherCost) || 0;
     return rent + utilities + groceries;
   };
 
   const calculateExpenses = (assignment: Assignment) => {
-    const housing = parseFloat(assignment.housingExpenses) || 0;
-    const health = parseFloat(assignment.healthInsurance) || 0;
-    const travel = parseFloat(assignment.travelExpenses) || 0;
+    const housing = parseFloat(assignment.housingCost) || 0;
+    const health = parseFloat(assignment.housingStipend) || 0;
+    const travel = parseFloat(assignment.transportationCost) || 0;
     const transportation = calculateTransportationExpenses(assignment);
     const living = calculateLivingExpenses(assignment);
     return housing + health + travel + transportation + living;
@@ -141,7 +158,9 @@ function App() {
   const calculateTotalBonuses = (assignment: Assignment) => {
     const signOn = parseFloat(assignment.signOnBonus) || 0;
     const completion = parseFloat(assignment.completionBonus) || 0;
-    return signOn + completion;
+    const referral = parseFloat(assignment.referralBonus) || 0;
+    const otherBonus = parseFloat(assignment.otherBonus) || 0;
+    return signOn + completion + referral + otherBonus;
   };
 
   const calculateNetIncome = (assignment: Assignment) => {
@@ -184,23 +203,25 @@ function App() {
       weeklyNet,
       totalValue,
       expenseBreakdown: [
-        { name: 'Housing', value: parseFloat(assignment.housingExpenses) || 0 },
+        { name: 'Housing', value: parseFloat(assignment.housingCost) || 0 },
         { name: 'Transportation', value: calculateTransportationExpenses(assignment) },
-        { name: 'Healthcare', value: parseFloat(assignment.healthInsurance) || 0 },
-        { name: 'Food & Utilities', value: (parseFloat(assignment.utilitiesEstimate) || 0) + (parseFloat(assignment.groceriesEstimate) || 0) },
-        { name: 'Travel', value: parseFloat(assignment.travelExpenses) || 0 }
+        { name: 'Healthcare', value: parseFloat(assignment.housingStipend) || 0 },
+        { name: 'Food & Utilities', value: (parseFloat(assignment.foodCost) || 0) + (parseFloat(assignment.otherCost) || 0) },
+        { name: 'Travel', value: parseFloat(assignment.transportationCost) || 0 }
       ]
     };
   }, []);
 
   // Prepare comparison data
   const comparisonData = useMemo(() => {
-    return assignments.map(assignment => ({
+    return assignments
+      .filter(assignment => activeComparisonContracts.has(assignment.id))
+      .map(assignment => ({
       id: assignment.id,
       name: assignment.facilityName || `Contract ${assignment.id}`,
       ...getAssignmentMetrics(assignment)
     }));
-  }, [assignments, getAssignmentMetrics]);
+  }, [assignments, getAssignmentMetrics, activeComparisonContracts]);
 
   const getRatingScore = (assignment: Assignment) => {
     const totalValue = parseFloat(calculateTotalContractValue(assignment));
@@ -262,31 +283,59 @@ function App() {
   const handleDeleteAssignment = (id: string) => {
     if (assignments.length > 1) {
       setAssignments(prev => prev.filter(a => a.id !== id));
-      if (activeAssignment === id) {
-        setActiveAssignment(assignments[0].id);
+      if (activeAssignments.has(id)) {
+        setActiveAssignments(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(id);
+          return newSet;
+        });
       }
     }
   };
 
+  const toggleContractInComparison = (contractId: string) => {
+    setActiveComparisonContracts(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(contractId)) {
+        newSet.delete(contractId);
+      } else {
+        newSet.add(contractId);
+      }
+      return newSet;
+    });
+  };
+
+  const toggleActiveAssignment = useCallback((id: string) => {
+    setSelectedContractId(id);
+  }, []);
+
   return (
-    <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white">
-      <div className="max-w-6xl mx-auto px-4 py-8">
+    <div className="min-h-screen bg-gray-50">
+      <Toaster position="top-right" />
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <header className="text-center mb-12">
-          <div className="flex items-center justify-center gap-3 mb-4">
-            <h1 className="text-3xl font-bold text-gray-800">Travel Contract Calculator</h1>
+          <div className="flex flex-col items-center gap-3 mb-4">
+            <h1 className="text-4xl font-bold text-gray-900">Travel Nurse Contract Calculator</h1>
           </div>
-          <div className="flex justify-center gap-4 mb-4">
-            <a href="https://github.com/sharondadavis/travel-contract-calculator" target="_blank" rel="noopener noreferrer">
-              <img src="https://img.shields.io/github/stars/sharondadavis/travel-contract-calculator?logo=github&style=for-the-badge" alt="GitHub stars" />
-            </a>
-            <a href="https://github.com/sharondadavis/travel-contract-calculator" target="_blank" rel="noopener noreferrer">
-              <img src="https://img.shields.io/github/forks/sharondadavis/travel-contract-calculator?logo=github&style=for-the-badge" alt="GitHub forks" />
-            </a>
-            <a href="https://github.com/sharondadavis/travel-contract-calculator" target="_blank" rel="noopener noreferrer">
-              <img src="https://img.shields.io/github/contributors/sharondadavis/travel-contract-calculator?logo=github&style=for-the-badge" alt="GitHub contributors" />
-            </a>
-          </div>
-          <p className="text-gray-600">Compare different travel contracts to make informed decisions</p>
+          <p className="text-xl text-gray-600 mb-4">AI-assisted travel nurse contract comparison</p>
+          <div className="flex justify-center gap-4">
+              <button
+                onClick={() => setShowChat(true)}
+              className="flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100 transition-colors duration-200"
+                title="Chat about your contracts"
+              >
+              <MessageSquare className="w-5 h-5" />
+              <span>Chat</span>
+              </button>
+              <button
+                onClick={() => setShowSettings(true)}
+              className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-50 text-gray-700 hover:bg-gray-100 transition-colors duration-200"
+                title="Settings"
+              >
+              <Settings className="w-5 h-5" />
+              <span>Settings</span>
+              </button>
+            </div>
         </header>
 
         {/* View Toggle */}
@@ -303,7 +352,7 @@ function App() {
                 `w-full rounded-lg py-2.5 text-sm font-medium leading-5 text-blue-700
                  ${selected ? 'bg-white shadow' : 'text-blue-100 hover:bg-white/[0.12] hover:text-white'}`
               }>
-                Compare Contracts
+                View Comparison
               </Tab>
             </Tab.List>
           </Tab.Group>
@@ -311,12 +360,12 @@ function App() {
 
         {/* Contract Navigation */}
         <div className="flex gap-4 mb-6 overflow-x-auto pb-2">
-          {assignments.map((assignment) => (
+          {view === 'details' && assignments.map((assignment) => (
             <button
               key={assignment.id}
-              onClick={() => setActiveAssignment(assignment.id)}
+              onClick={() => toggleActiveAssignment(assignment.id)}
               className={`flex items-center gap-2 px-4 py-2 rounded-lg ${
-                activeAssignment === assignment.id
+                selectedContractId === assignment.id
                   ? 'bg-blue-600 text-white'
                   : 'bg-white text-gray-700 hover:bg-gray-50'
               } shadow-sm transition-colors duration-200`}
@@ -333,22 +382,24 @@ function App() {
               )}
             </button>
           ))}
-          <button
-            onClick={addNewAssignment}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-green-50 text-green-700 hover:bg-green-100 shadow-sm transition-colors duration-200"
-          >
-            <Plus className="w-4 h-4" />
-            Add Contract
-          </button>
+          {view === 'details' && (
+            <button
+              onClick={addNewAssignment}
+              className="flex items-center gap-2 px-4 py-2 rounded-lg bg-green-50 text-green-700 hover:bg-green-100 shadow-sm transition-colors duration-200"
+            >
+              <Plus className="w-4 h-4" />
+              Add Contract
+            </button>
+          )}
         </div>
 
         {view === 'details' ? (
-          // Contract Details View
-          <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
-            {assignments.map((assignment) => (
-              assignment.id === activeAssignment && (
+          <div className="space-y-6">
+            {assignments.map((assignment) => {
+              if (selectedContractId === assignment.id) {
+                return (
                 <div key={assignment.id} className="space-y-6">
-                  {/* Existing contract details form */}
+                    {/* Contract details form */}
                   <div className="grid md:grid-cols-2 gap-8">
                     <section className="bg-white rounded-xl shadow-lg p-6">
                       <h2 className="text-xl font-semibold mb-6 flex items-center gap-2">
@@ -568,13 +619,13 @@ function App() {
                               <label className="block text-sm text-gray-600 mb-1">Meals Stipend</label>
                               <input
                                 type="number"
-                                name="mealsStipend"
-                                value={assignment.mealsStipend}
+                                  name="mealStipend"
+                                  value={assignment.mealStipend}
                                 onChange={(e) => handleInputChange(e, assignment.id)}
                                 className="w-full rounded-lg border-2 border-gray-400 shadow-sm focus:border-2 focus:border-green-600 focus:ring-green-500 transition-colors duration-200 bg-white hover:border-gray-500 px-4 py-2"
                                 placeholder="0.00"
                               />
-                              {fieldValidation[`${assignment.id}-mealsStipend`] && (
+                                {fieldValidation[`${assignment.id}-mealStipend`] && (
                                 <div className="text-green-500 mt-1">
                                   <svg className="w-5 h-5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
@@ -584,16 +635,16 @@ function App() {
                               )}
                             </div>
                             <div>
-                              <label className="block text-sm text-gray-600 mb-1">Incidentals Stipend</label>
+                                <label className="block text-sm text-gray-600 mb-1">Transportation Stipend</label>
                               <input
                                 type="number"
-                                name="incidentalsStipend"
-                                value={assignment.incidentalsStipend}
+                                  name="transportationStipend"
+                                  value={assignment.transportationStipend}
                                 onChange={(e) => handleInputChange(e, assignment.id)}
                                 className="w-full rounded-lg border-2 border-gray-400 shadow-sm focus:border-2 focus:border-green-600 focus:ring-green-500 transition-colors duration-200 bg-white hover:border-gray-500 px-4 py-2"
                                 placeholder="0.00"
                               />
-                              {fieldValidation[`${assignment.id}-incidentalsStipend`] && (
+                                {fieldValidation[`${assignment.id}-transportationStipend`] && (
                                 <div className="text-green-500 mt-1">
                                   <svg className="w-5 h-5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
@@ -602,6 +653,25 @@ function App() {
                                 </div>
                               )}
                             </div>
+                              <div>
+                                <label className="block text-sm text-gray-600 mb-1">Other Stipend</label>
+                                <input
+                                  type="number"
+                                  name="otherStipend"
+                                  value={assignment.otherStipend}
+                                  onChange={(e) => handleInputChange(e, assignment.id)}
+                                  className="w-full rounded-lg border-2 border-gray-400 shadow-sm focus:border-2 focus:border-green-600 focus:ring-green-500 transition-colors duration-200 bg-white hover:border-gray-500 px-4 py-2"
+                                  placeholder="0.00"
+                                />
+                                {fieldValidation[`${assignment.id}-otherStipend`] && (
+                                  <div className="text-green-500 mt-1">
+                                    <svg className="w-5 h-5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                    </svg>
+                                    <span className="ml-2">Valid</span>
+                                  </div>
+                                )}
+                              </div>
                           </div>
                         </div>
 
@@ -646,7 +716,45 @@ function App() {
                                 </div>
                               )}
                             </div>
+                              <div>
+                                <label className="block text-sm text-gray-600 mb-1">Referral Bonus</label>
+                                <input
+                                  type="number"
+                                  name="referralBonus"
+                                  value={assignment.referralBonus}
+                                  onChange={(e) => handleInputChange(e, assignment.id)}
+                                  className="w-full rounded-lg border-2 border-gray-400 shadow-sm focus:border-2 focus:border-green-600 focus:ring-green-500 transition-colors duration-200 bg-white hover:border-gray-500 px-4 py-2"
+                                  placeholder="0.00"
+                                />
+                                {fieldValidation[`${assignment.id}-referralBonus`] && (
+                                  <div className="text-green-500 mt-1">
+                                    <svg className="w-5 h-5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                    </svg>
+                                    <span className="ml-2">Valid</span>
                           </div>
+                                )}
+                              </div>
+                              <div>
+                                <label className="block text-sm text-gray-600 mb-1">Other Bonus</label>
+                                <input
+                                  type="number"
+                                  name="otherBonus"
+                                  value={assignment.otherBonus}
+                                  onChange={(e) => handleInputChange(e, assignment.id)}
+                                  className="w-full rounded-lg border-2 border-gray-400 shadow-sm focus:border-2 focus:border-green-600 focus:ring-green-500 transition-colors duration-200 bg-white hover:border-gray-500 px-4 py-2"
+                                  placeholder="0.00"
+                                />
+                                {fieldValidation[`${assignment.id}-otherBonus`] && (
+                                  <div className="text-green-500 mt-1">
+                                    <svg className="w-5 h-5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                    </svg>
+                                    <span className="ml-2">Valid</span>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
                         </div>
                       </div>
                     </section>
@@ -663,7 +771,7 @@ function App() {
                           </label>
                           <select
                             name="transportationType"
-                            value={assignment.transportationType}
+                              value={assignment.shiftType}
                             onChange={(e) => handleInputChange(e, assignment.id)}
                             className="w-full rounded-lg border-2 border-gray-400 shadow-sm focus:border-2 focus:border-green-600 focus:ring-green-500 transition-colors duration-200 bg-white hover:border-gray-500 px-4 py-2"
                           >
@@ -681,20 +789,20 @@ function App() {
                           )}
                         </div>
 
-                        {assignment.transportationType === 'public' && (
+                          {assignment.shiftType === 'public' && (
                           <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">
                               Weekly Public Transport Cost
                             </label>
                             <input
                               type="number"
-                              name="publicTransportCost"
-                              value={assignment.publicTransportCost}
+                                name="transportationCost"
+                                value={assignment.transportationCost}
                               onChange={(e) => handleInputChange(e, assignment.id)}
                               className="w-full rounded-lg border-2 border-gray-400 shadow-sm focus:border-2 focus:border-green-600 focus:ring-green-500 transition-colors duration-200 bg-white hover:border-gray-500 px-4 py-2"
                               placeholder="0.00"
                             />
-                            {fieldValidation[`${assignment.id}-publicTransportCost`] && (
+                              {fieldValidation[`${assignment.id}-transportationCost`] && (
                               <div className="text-green-500 mt-1">
                                 <svg className="w-5 h-5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
@@ -705,7 +813,7 @@ function App() {
                           </div>
                         )}
 
-                        {assignment.transportationType === 'rideshare' && (
+                          {assignment.shiftType === 'rideshare' && (
                           <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">
                               Weekly Rideshare Expenses
@@ -729,7 +837,7 @@ function App() {
                           </div>
                         )}
 
-                        {assignment.transportationType === 'personal' && (
+                          {assignment.shiftType === 'personal' && (
                           <>
                             <div>
                               <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -765,27 +873,6 @@ function App() {
                                 placeholder="0.00"
                               />
                               {fieldValidation[`${assignment.id}-fuelCostPerGallon`] && (
-                                <div className="text-green-500 mt-1">
-                                  <svg className="w-5 h-5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                                  </svg>
-                                  <span className="ml-2">Valid</span>
-                                </div>
-                              )}
-                            </div>
-                            <div>
-                              <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Vehicle MPG
-                              </label>
-                              <input
-                                type="number"
-                                name="vehicleMpg"
-                                value={assignment.vehicleMpg}
-                                onChange={(e) => handleInputChange(e, assignment.id)}
-                                className="w-full rounded-lg border-2 border-gray-400 shadow-sm focus:border-2 focus:border-green-600 focus:ring-green-500 transition-colors duration-200 bg-white hover:border-gray-500 px-4 py-2"
-                                placeholder="25"
-                              />
-                              {fieldValidation[`${assignment.id}-vehicleMpg`] && (
                                 <div className="text-green-500 mt-1">
                                   <svg className="w-5 h-5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
@@ -832,13 +919,13 @@ function App() {
                           </label>
                           <input
                             type="number"
-                            name="rentEstimate"
-                            value={assignment.rentEstimate}
+                              name="housingCost"
+                              value={assignment.housingCost}
                             onChange={(e) => handleInputChange(e, assignment.id)}
                             className="w-full rounded-lg border-2 border-gray-400 shadow-sm focus:border-2 focus:border-green-600 focus:ring-green-500 transition-colors duration-200 bg-white hover:border-gray-500 px-4 py-2"
                             placeholder="0.00"
                           />
-                          {fieldValidation[`${assignment.id}-rentEstimate`] && (
+                            {fieldValidation[`${assignment.id}-housingCost`] && (
                             <div className="text-green-500 mt-1">
                               <svg className="w-5 h-5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
@@ -854,13 +941,13 @@ function App() {
                           </label>
                           <input
                             type="number"
-                            name="utilitiesEstimate"
-                            value={assignment.utilitiesEstimate}
+                              name="foodCost"
+                              value={assignment.foodCost}
                             onChange={(e) => handleInputChange(e, assignment.id)}
                             className="w-full rounded-lg border-2 border-gray-400 shadow-sm focus:border-2 focus:border-green-600 focus:ring-green-500 transition-colors duration-200 bg-white hover:border-gray-500 px-4 py-2"
                             placeholder="0.00"
                           />
-                          {fieldValidation[`${assignment.id}-utilitiesEstimate`] && (
+                            {fieldValidation[`${assignment.id}-foodCost`] && (
                             <div className="text-green-500 mt-1">
                               <svg className="w-5 h-5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
@@ -876,13 +963,13 @@ function App() {
                           </label>
                           <input
                             type="number"
-                            name="groceriesEstimate"
-                            value={assignment.groceriesEstimate}
+                              name="otherCost"
+                              value={assignment.otherCost}
                             onChange={(e) => handleInputChange(e, assignment.id)}
                             className="w-full rounded-lg border-2 border-gray-400 shadow-sm focus:border-2 focus:border-green-600 focus:ring-green-500 transition-colors duration-200 bg-white hover:border-gray-500 px-4 py-2"
                             placeholder="0.00"
                           />
-                          {fieldValidation[`${assignment.id}-groceriesEstimate`] && (
+                            {fieldValidation[`${assignment.id}-otherCost`] && (
                             <div className="text-green-500 mt-1">
                               <svg className="w-5 h-5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
@@ -1062,29 +1149,35 @@ function App() {
                             ))}
                           </div>
                         </div>
-                        <div className="hidden md:block w-px h-24 bg-gray-200"></div>
-                        <div className="hidden md:block">
-                          <h5 className="font-medium mb-2 text-gray-900">Quick Tips</h5>
-                          <ul className="space-y-1 text-sm">
-                            {getContractTips(assignment).map((tip, index) => (
-                              <li key={index} className="flex items-center gap-2 text-gray-600">
-                                <Lightbulb className="w-4 h-4 text-yellow-500" />
-                                {tip}
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
                       </div>
                     </div>
                   </section>
                 </div>
-              )
-            ))}
+                );
+              }
+              return null;
+            })}
           </div>
         ) : (
-          // Comparison View
           <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
             <h3 className="text-lg font-semibold mb-4">Contract Comparison</h3>
+            
+            {/* Contract Filter Buttons */}
+            <div className="flex gap-2 mb-6 flex-wrap">
+              {assignments.map((assignment) => (
+                <button
+                  key={assignment.id}
+                  onClick={() => toggleContractInComparison(assignment.id)}
+                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200 ${
+                    activeComparisonContracts.has(assignment.id)
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  {assignment.facilityName || `Contract ${assignment.id}`}
+                </button>
+              ))}
+            </div>
             
             {/* Weekly Net Income Comparison */}
             <div className="mb-8">
@@ -1143,6 +1236,32 @@ function App() {
             </div>
           </div>
         )}
+
+        {showChat && (
+          <ChatPanel
+            contracts={assignments}
+            onClose={() => setShowChat(false)}
+          />
+        )}
+
+        {showSettings && (
+          <SettingsPanel onClose={() => setShowSettings(false)} />
+        )}
+
+        {/* Footer */}
+        <footer className="mt-12 pt-8 border-t border-gray-200">
+          <div className="flex justify-center gap-4">
+            <a href="https://github.com/sharondadavis/travel-contract-calculator" target="_blank" rel="noopener noreferrer">
+              <img src="https://img.shields.io/github/stars/sharondadavis/travel-contract-calculator?logo=github&style=for-the-badge" alt="GitHub stars" />
+            </a>
+            <a href="https://github.com/sharondadavis/travel-contract-calculator" target="_blank" rel="noopener noreferrer">
+              <img src="https://img.shields.io/github/forks/sharondadavis/travel-contract-calculator?logo=github&style=for-the-badge" alt="GitHub forks" />
+            </a>
+            <a href="https://github.com/sharondadavis/travel-contract-calculator" target="_blank" rel="noopener noreferrer">
+              <img src="https://img.shields.io/github/contributors/sharondadavis/travel-contract-calculator?logo=github&style=for-the-badge" alt="GitHub contributors" />
+            </a>
+          </div>
+        </footer>
       </div>
     </div>
   );
