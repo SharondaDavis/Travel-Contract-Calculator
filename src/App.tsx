@@ -1149,18 +1149,6 @@ function App() {
                             ))}
                           </div>
                         </div>
-                        <div className="hidden md:block w-px h-24 bg-gray-200"></div>
-                        <div className="hidden md:block">
-                          <h5 className="font-medium mb-2 text-gray-900">Quick Tips</h5>
-                          <ul className="space-y-1 text-sm">
-                            {getContractTips(assignment).map((tip, index) => (
-                              <li key={index} className="flex items-center gap-2 text-gray-600">
-                                <Lightbulb className="w-4 h-4 text-yellow-500" />
-                                {tip}
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
                       </div>
                     </div>
                   </section>
