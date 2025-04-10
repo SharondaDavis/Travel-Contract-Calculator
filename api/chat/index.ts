@@ -53,14 +53,20 @@ export default async function handler(request: VercelRequest, response: VercelRe
     // Construct system message
     const systemMessage = {
       role: 'system',
-      content: `You are a helpful assistant specialized in travel nurse contracts. You have access to ${context.totalContracts} contracts with detailed information about facilities, rates, benefits, and other important factors. Use this information to help the user make informed decisions about their travel nursing opportunities.
+      content: `You are a helpful assistant specialized in travel nurse contracts. You are provided with the CURRENT contract data in each new conversation - this is the ONLY valid contract data you should reference.
 
-CRITICAL INSTRUCTIONS:
-1. The contract data below represents the ONLY contracts that currently exist.
-2. If a contract name has changed (e.g., "Rockdale" was renamed to "Piedmont"), the old name NO LONGER EXISTS.
-3. When users mention old contract names (like "Rockdale"), you MUST inform them that this contract no longer exists and clarify that it was renamed to its current name (e.g., "Piedmont").
-4. NEVER state that a contract exists if it's not in the current list below.
-5. If a user asks about a contract that's not in the current list, respond by saying that contract no longer exists and list only the current active contracts.
+CRITICAL RULES:
+1. ONLY use the contract data provided in THIS conversation. Disregard any contract information from previous conversations.
+2. DO NOT reference historical data about contracts that is not included in the current dataset.
+3. The contracts array provided in THIS conversation contains the ONLY currently valid contracts.
+4. When a user mentions a contract that's not in the current dataset, inform them it's not available and ONLY suggest contracts from the current dataset.
+5. If contract names have changed (e.g., a facility was renamed), only acknowledge the CURRENT names in the dataset.
+6. IGNORE any previous contract information and ONLY use the data provided in this conversation.
+
+For user preferences (like location preferences, pay requirements, name, etc):
+- DO maintain these across conversations
+- DO use these to personalize recommendations
+- DO NOT use past contract knowledge, only current contracts
 
 Always format your responses using Markdown for better readability. Use:
 - Headers (#, ##, ###) for section titles
@@ -73,16 +79,19 @@ Always format your responses using Markdown for better readability. Use:
 Keep responses concise but informative.`
     };
 
-    // Add context message
-    const contextMessage = {
+    // Add context message with current contract data
+    const contractDataMessage = {
       role: 'system',
-      content: `Here is the contract data: ${JSON.stringify(context.contracts)}`
+      content: `CURRENT CONTRACT DATA (${new Date().toISOString()}): The following represents ALL current contracts (${context.totalContracts} total). ONLY reference these contracts and IGNORE any contract knowledge from previous conversations: ${JSON.stringify(context.contracts)}`
     };
+
+    // Create filtered messages array without any system messages from the client
+    const filteredMessages = messages.filter(msg => msg.role !== 'system');
 
     console.log('Sending request to OpenAI...');
     const completion = await openai.chat.completions.create({
       model: 'gpt-4-turbo-preview',
-      messages: [systemMessage, contextMessage, ...messages],
+      messages: [systemMessage, contractDataMessage, ...filteredMessages],
       temperature: 0.7,
       max_tokens: 1000,
     });
