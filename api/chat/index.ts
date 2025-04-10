@@ -41,6 +41,17 @@ export default async function handler(request: VercelRequest, response: VercelRe
       return;
     }
 
+    // Check if request is about financial calculations to optimize handling
+    const isFinancialCalculation = messages.some(msg => 
+      msg.role === 'user' && 
+      (msg.content.toLowerCase().includes('calculate') || 
+       msg.content.toLowerCase().includes('income') ||
+       msg.content.toLowerCase().includes('expenses') ||
+       msg.content.toLowerCase().includes('tax'))
+    );
+
+    console.log('Request type:', isFinancialCalculation ? 'Financial calculation' : 'General inquiry');
+
     console.log('Initializing OpenAI client...');
     const openai = new OpenAI({
       apiKey: apiKey,
@@ -68,6 +79,15 @@ For user preferences (like location preferences, pay requirements, name, etc):
 - DO use these to personalize recommendations
 - DO NOT use past contract knowledge, only current contracts
 
+${isFinancialCalculation ? `
+For financial calculations:
+- Make calculations step by step
+- Show your work clearly
+- Base all calculations ONLY on data from the current contracts
+- For tax estimates, use a standard 30% rate for taxable income unless user specifies otherwise
+- Be precise with all numerical values and include proper units ($, weeks, etc.)
+` : ''}
+
 Always format your responses using Markdown for better readability. Use:
 - Headers (#, ##, ###) for section titles
 - Bullet points (-) for lists
@@ -88,12 +108,23 @@ Keep responses concise but informative.`
     // Create filtered messages array without any system messages from the client
     const filteredMessages = messages.filter(msg => msg.role !== 'system');
 
+    // Set appropriate parameters based on request type
+    const temperature = isFinancialCalculation ? 0.3 : 0.7; // Lower temperature for more deterministic financial calculations
+    const maxTokens = isFinancialCalculation ? 1500 : 1000; // Allow more tokens for financial calculations
+    
     console.log('Sending request to OpenAI...');
+    console.log('Request parameters:', { 
+      isFinancialCalculation, 
+      temperature, 
+      maxTokens,
+      messageCount: filteredMessages.length 
+    });
+    
     const completion = await openai.chat.completions.create({
       model: 'gpt-4-turbo-preview',
       messages: [systemMessage, contractDataMessage, ...filteredMessages],
-      temperature: 0.7,
-      max_tokens: 1000,
+      temperature: temperature,
+      max_tokens: maxTokens,
     });
 
     console.log('Received response from OpenAI');
@@ -103,11 +134,16 @@ Keep responses concise but informative.`
   } catch (error) {
     console.error('Error in chat handler:', error);
     
+    // Check for timeout error
+    const isTimeoutError = error instanceof Error && 
+      (error.message.includes('timeout') || error.message.includes('ETIMEDOUT') || error.message.includes('ESOCKETTIMEDOUT'));
+    
     // Ensure we return a properly formatted error response
-    response.status(500).json({ 
-      error: 'Failed to process chat request',
+    response.status(isTimeoutError ? 504 : 500).json({ 
+      error: isTimeoutError ? 'Request timed out' : 'Failed to process chat request',
       details: error instanceof Error ? error.message : 'Unknown error occurred',
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
+      suggestion: isTimeoutError ? 'Try breaking your request into smaller, more specific questions' : undefined
     });
   }
 } 

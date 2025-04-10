@@ -43,6 +43,20 @@ const promptSuggestions = [
   }
 ];
 
+// Thinking indicator component with gradient animation
+const ThinkingIndicator = () => (
+  <div className="flex justify-start">
+    <div className="max-w-[80%] rounded-lg p-4 bg-gray-100 text-gray-800">
+      <div className="flex items-center space-x-2">
+        <div className="w-32 h-6 rounded-full bg-gradient-to-r from-gray-200 via-gray-300 to-gray-200 animate-pulse">
+          <div className="w-full h-full rounded-full bg-gradient-to-r from-blue-300 via-purple-300 to-blue-300 animate-gradient"></div>
+        </div>
+        <span className="text-gray-500 animate-pulse">Thinking carefully...</span>
+      </div>
+    </div>
+  </div>
+);
+
 export function ChatPanel({ contracts, onClose }: ChatPanelProps) {
   const [messages, setMessages] = useState<Message[]>([
     {
@@ -61,6 +75,27 @@ export function ChatPanel({ contracts, onClose }: ChatPanelProps) {
     document.body.style.overflow = 'hidden';
     return () => {
       document.body.style.overflow = 'auto';
+    };
+  }, []);
+
+  // Add CSS for the gradient animation
+  useEffect(() => {
+    const style = document.createElement('style');
+    style.innerHTML = `
+      @keyframes gradient {
+        0% { background-position: 0% 50%; }
+        50% { background-position: 100% 50%; }
+        100% { background-position: 0% 50%; }
+      }
+      .animate-gradient {
+        background-size: 200% 200%;
+        animation: gradient 2s ease infinite;
+        opacity: 0.7;
+      }
+    `;
+    document.head.appendChild(style);
+    return () => {
+      document.head.removeChild(style);
     };
   }, []);
 
@@ -108,7 +143,7 @@ export function ChatPanel({ contracts, onClose }: ChatPanelProps) {
 
   useEffect(() => {
     scrollToBottom();
-  }, [messages]);
+  }, [messages, isLoading]);
 
   const handleSuggestionClick = (prompt: string) => {
     setInput(prompt);
@@ -243,6 +278,9 @@ export function ChatPanel({ contracts, onClose }: ChatPanelProps) {
               </div>
             </div>
           ))}
+
+          {isLoading && <ThinkingIndicator />}
+          
           <div ref={messagesEndRef} />
         </div>
 
