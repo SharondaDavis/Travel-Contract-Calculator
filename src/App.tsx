@@ -10,6 +10,7 @@ import { AddressInput } from './components/distance-calculator/AddressInput';
 import { QualificationSpectrum } from './components/distance-calculator/QualificationSpectrum';
 import { calculateDistance, getSimulatedDistance } from './services/geolocation';
 import { useContractScore } from './hooks/useContractScore';
+import { FacilityInput } from './components/FacilityInput';
 
 interface Assignment {
   id: string;
@@ -519,48 +520,22 @@ function App() {
                       </h2>
                       
                       <div className="space-y-4">
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Facility Name & Location
-                          </label>
-                          <AddressInput
-                            label=""
-                            value={assignment.location}
-                            onChange={(value, metadata) => {
-                              // Update location
-                              const locationEvent = { target: { name: 'location', value } };
-                              handleInputChange(locationEvent, assignment.id);
-                              
-                              // Update facility name if metadata is provided
-                              if (metadata?.facility_name) {
-                                const facilityNameEvent = { 
-                                  target: { 
-                                    name: 'facilityName', 
-                                    value: metadata.facility_name 
-                                  } 
-                                };
-                                handleInputChange(facilityNameEvent, assignment.id);
-                              }
-                            }}
-                            placeholder="Search for facility name or address"
-                            includeFacilities={true}
-                            returnMetadata={true}
-                          />
-                          {fieldValidation[`${assignment.id}-location`] && (
-                            <div className="text-green-500 mt-1">
-                              <svg className="w-5 h-5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                              </svg>
-                              <span className="ml-2">Valid</span>
-                            </div>
-                          )}
-                          
-                          {assignment.facilityName && (
-                            <div className="mt-2 p-2 bg-blue-50 rounded-md">
-                              <p className="text-sm font-medium text-blue-700">Selected Facility: {assignment.facilityName}</p>
-                            </div>
-                          )}
-                        </div>
+                        {/* Combined Facility Name & Location Input */}
+                        <FacilityInput
+                          facilityName={assignment.facilityName}
+                          location={assignment.location}
+                          onFacilityChange={(facilityName, location) => {
+                            // Update facility name
+                            const facilityNameEvent = { target: { name: 'facilityName', value: facilityName } };
+                            handleInputChange(facilityNameEvent, assignment.id);
+                            
+                            // Update location
+                            const locationEvent = { target: { name: 'location', value: location } };
+                            handleInputChange(locationEvent, assignment.id);
+                          }}
+                          id={assignment.id}
+                          fieldValidation={fieldValidation}
+                        />
 
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-1">
