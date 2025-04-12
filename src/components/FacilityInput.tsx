@@ -1,5 +1,6 @@
 import React from 'react';
 import { AddressInput, AddressSuggestionMetadata } from './distance-calculator/AddressInput';
+import { DistanceDisplay } from './DistanceDisplay';
 
 interface FacilityInputProps {
   facilityName: string;
@@ -7,6 +8,9 @@ interface FacilityInputProps {
   onFacilityChange: (facilityName: string, location: string) => void;
   id: string;
   fieldValidation: { [key: string]: boolean };
+  homeAddress: string;
+  onDistanceCalculated?: (distance: number, qualifies: boolean) => void;
+  showDistanceDisplay?: boolean;
 }
 
 export const FacilityInput: React.FC<FacilityInputProps> = ({
@@ -14,7 +18,10 @@ export const FacilityInput: React.FC<FacilityInputProps> = ({
   location,
   onFacilityChange,
   id,
-  fieldValidation
+  fieldValidation,
+  homeAddress,
+  onDistanceCalculated,
+  showDistanceDisplay = true
 }) => {
   return (
     <div>
@@ -51,6 +58,16 @@ export const FacilityInput: React.FC<FacilityInputProps> = ({
         <div className="mt-2 p-2 bg-blue-50 rounded-md">
           <p className="text-sm font-medium text-blue-700">Selected Facility: {facilityName}</p>
         </div>
+      )}
+
+      {/* Distance Display */}
+      {showDistanceDisplay && location && (
+        <DistanceDisplay
+          homeAddress={homeAddress}
+          facilityLocation={location}
+          facilityName={facilityName}
+          onDistanceCalculated={onDistanceCalculated}
+        />
       )}
     </div>
   );

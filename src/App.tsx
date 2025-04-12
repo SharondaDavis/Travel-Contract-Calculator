@@ -520,7 +520,7 @@ function App() {
                       </h2>
                       
                       <div className="space-y-4">
-                        {/* Combined Facility Name & Location Input */}
+                        {/* Combined Facility Name & Location Input with Distance Display */}
                         <FacilityInput
                           facilityName={assignment.facilityName}
                           location={assignment.location}
@@ -535,6 +535,20 @@ function App() {
                           }}
                           id={assignment.id}
                           fieldValidation={fieldValidation}
+                          homeAddress={userHomeAddress}
+                          onDistanceCalculated={(distance, qualifies) => {
+                            // Update the assignment with the calculated distance
+                            setAssignments(prev => prev.map(a => {
+                              if (a.id === assignment.id) {
+                                return {
+                                  ...a,
+                                  distanceToAssignment: distance,
+                                  distanceQualifies: qualifies
+                                };
+                              }
+                              return a;
+                            }));
+                          }}
                         />
 
                         <div>
@@ -857,7 +871,7 @@ function App() {
                           </label>
                           <select
                             name="transportationType"
-                              value={assignment.shiftType}
+                            value={assignment.shiftType}
                             onChange={(e) => handleInputChange(e, assignment.id)}
                             className="w-full rounded-lg border-2 border-gray-400 shadow-sm focus:border-2 focus:border-green-600 focus:ring-green-500 transition-colors duration-200 bg-white hover:border-gray-500 px-4 py-2"
                           >
@@ -875,70 +889,31 @@ function App() {
                           )}
                         </div>
 
-                        {/* Distance Qualification Section */}
-                        <div className="pt-4 border-t">
-                          <h3 className="text-sm font-medium text-gray-700 mb-3 flex items-center gap-2">
-                            <MapPin className="h-4 w-4" />
-                            Distance Qualification
-                          </h3>
-                          
-                          {!userHomeAddress ? (
-                            <div className="p-4 bg-yellow-50 text-yellow-700 rounded-lg">
-                              <p>Please set your home address in your profile to calculate distance qualification.</p>
-                              <button 
-                                onClick={() => setShowUserProfile(true)}
-                                className="mt-2 text-blue-600 hover:underline"
-                              >
-                                Set Home Address
-                              </button>
-                            </div>
-                          ) : (
-                            <>
-                              <div className="flex items-center justify-between mb-4">
-                                <div>
-                                  <p className="text-sm font-medium text-gray-700">Distance from home to assignment:</p>
-                                  {assignment.distanceToAssignment !== undefined ? (
-                                    <div className="mt-1 flex items-center">
-                                      <span className="text-lg font-bold">
-                                        {assignment.distanceToAssignment.toFixed(1)} miles
-                                      </span>
-                                      <span className="ml-2 px-2 py-1 text-xs rounded-full" style={{ 
-                                        backgroundColor: assignment.distanceQualifies ? '#d1fae5' : '#fee2e2',
-                                        color: assignment.distanceQualifies ? '#047857' : '#b91c1c'
-                                      }}>
-                                        {assignment.distanceQualifies ? 'Qualifies' : 'Does not qualify'}
-                                      </span>
-                                    </div>
-                                  ) : (
-                                    <p className="text-sm text-gray-500">Not calculated yet</p>
-                                  )}
+                        {/* Display distance qualification status if available */}
+                        {assignment.distanceToAssignment !== undefined && (
+                          <div className="p-3 bg-gray-50 rounded-md">
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <p className="text-sm font-medium text-gray-700">Distance qualification:</p>
+                                <div className="flex items-center mt-1">
+                                  <span className={`px-2 py-1 text-xs rounded-full ${
+                                    assignment.distanceQualifies 
+                                      ? 'bg-green-100 text-green-800' 
+                                      : 'bg-red-100 text-red-800'
+                                  }`}>
+                                    {assignment.distanceQualifies ? 'Qualifies' : 'Does not qualify'}
+                                  </span>
                                 </div>
-                                
-                                <button
-                                  onClick={() => calculateAndUpdateDistance(assignment.id, userHomeAddress, assignment.location)}
-                                  disabled={!userHomeAddress || !assignment.location}
-                                  className="py-2 px-4 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:bg-gray-400 transition-colors text-sm"
-                                >
-                                  Calculate Distance
-                                </button>
                               </div>
-                              
-                              {assignment.distanceToAssignment !== undefined && (
-                                <div className="mt-2">
-                                  <p className="text-sm text-gray-700 mb-2">
-                                    Distance calculated "as the bird flies" (straight-line distance)
-                                  </p>
-                                  <QualificationSpectrum 
-                                    distance={assignment.distanceToAssignment} 
-                                    minDistance={45} 
-                                  />
-                                </div>
-                              )}
-                            </>
-                          )}
-                        </div>
+                              <div className="text-right">
+                                <p className="text-sm font-medium text-gray-700">Distance:</p>
+                                <p className="text-lg font-bold">{assignment.distanceToAssignment.toFixed(1)} miles</p>
+                              </div>
+                            </div>
+                          </div>
+                        )}
 
-                          {assignment.shiftType === 'public' && (
+                        {assignment.shiftType === 'public' && (
                           <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">
                               Weekly Public Transport Cost
@@ -962,7 +937,7 @@ function App() {
                           </div>
                         )}
 
-                          {assignment.shiftType === 'rideshare' && (
+                        {assignment.shiftType === 'rideshare' && (
                           <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">
                               Weekly Rideshare Expenses
@@ -986,7 +961,7 @@ function App() {
                           </div>
                         )}
 
-                          {assignment.shiftType === 'personal' && (
+                        {assignment.shiftType === 'personal' && (
                           <>
                             <div>
                               <label className="block text-sm font-medium text-gray-700 mb-1">
