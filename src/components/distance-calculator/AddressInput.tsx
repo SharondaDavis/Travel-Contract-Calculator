@@ -234,7 +234,7 @@ export function AddressInput({
           value={value}
           onChange={handleInputChange}
           onFocus={() => value.length >= 3 && setShowSuggestions(true)}
-          placeholder={includeFacilities ? 'Enter facility name or address' : placeholder}
+          placeholder={includeFacilities ? 'Type facility name or full address (e.g., 123 Main St, City, State)' : 'Enter complete address with city and state'}
           disabled={disabled}
           className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100"
         />

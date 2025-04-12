@@ -26,7 +26,7 @@ export const FacilityInput: React.FC<FacilityInputProps> = ({
   return (
     <div>
       <label className="block text-sm font-medium text-gray-700 mb-1">
-        Facility Name & Location
+        Facility Name & Location <span className="text-xs text-gray-500">(search by name or enter full address)</span>
       </label>
       <AddressInput
         label=""

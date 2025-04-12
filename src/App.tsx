@@ -437,16 +437,17 @@ function App() {
           </div>
           
           <div className="mt-4">
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Home Address <span className="text-xs text-gray-500">(required for distance calculations)</span>
+            </label>
             <AddressInput
-              label="Your Home Address"
+              label=""
               value={userHomeAddress}
               onChange={(value) => setUserHomeAddress(value)}
-              placeholder="Enter your permanent tax home address"
-              includeFacilities={true}
-              returnMetadata={true}
+              placeholder="Enter your complete home address with city and state"
             />
-            <p className="mt-1 text-sm text-gray-500">
-              This address will be used for all distance calculations
+            <p className="text-xs text-gray-500 mt-1">
+              Your home address is used to calculate distance to assignments for tax-free stipend qualification.
             </p>
           </div>
         </div>
