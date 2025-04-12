@@ -11,7 +11,8 @@
     "dev:app": "vite",
     "dev": "concurrently \"npm run dev:server\" \"npm run dev:app\"",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "demo:distance": "vite --config vite.config.ts"
   },
   "dependencies": {
     "@headlessui/react": "^1.7.17",
