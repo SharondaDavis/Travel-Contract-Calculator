@@ -11,18 +11,11 @@ interface DistanceDisplayProps {
   onDistanceCalculated?: (distance: number, qualifies: boolean) => void;
 }
 
-// Common distance requirements by agency
+// Common distance requirements by agency type
 const AGENCY_DISTANCE_REQUIREMENTS = {
-  'AMN Healthcare': 50,
-  'Cross Country Healthcare': 45,
-  'Aya Healthcare': 50,
-  'Trusted Health': 40,
-  'Medical Solutions': 45,
-  'FlexCare': 50,
-  'Triage Staffing': 45,
-  'TotalMed': 50,
-  'Fusion Medical Staffing': 45,
-  'Host Healthcare': 50,
+  'Type A (50 miles)': 50,
+  'Type B (45 miles)': 45,
+  'Type C (40 miles)': 40,
   'Other': 45 // Default
 };
 
@@ -40,18 +33,18 @@ export const DistanceDisplay: React.FC<DistanceDisplayProps> = ({
   const [qualifies, setQualifies] = useState(false);
   const [selectedAgency, setSelectedAgency] = useState<string>(agencyName);
   const [customDistance, setCustomDistance] = useState<string>('');
-  
+
   // Determine the qualifying distance based on agency or custom input
   const getQualifyingDistance = (): number => {
     if (minQualifyingDistance !== undefined) {
       return minQualifyingDistance;
     }
-    
+
     if (selectedAgency === 'Custom' && customDistance) {
       return parseFloat(customDistance);
     }
-    
-    return AGENCY_DISTANCE_REQUIREMENTS[selectedAgency as keyof typeof AGENCY_DISTANCE_REQUIREMENTS] || 
+
+    return AGENCY_DISTANCE_REQUIREMENTS[selectedAgency as keyof typeof AGENCY_DISTANCE_REQUIREMENTS] ||
            AGENCY_DISTANCE_REQUIREMENTS.Other;
   };
 
@@ -77,14 +70,14 @@ export const DistanceDisplay: React.FC<DistanceDisplayProps> = ({
       const qualifyingDistance = getQualifyingDistance();
       const doesQualify = calculatedDistance >= qualifyingDistance;
       setQualifies(doesQualify);
-      
+
       // Notify parent component if callback provided
       if (onDistanceCalculated) {
         onDistanceCalculated(calculatedDistance, doesQualify);
       }
     } catch (error) {
       console.error('Error calculating distance:', error);
-      
+
       try {
         // Fallback to simulated distance for demo purposes
         const simulatedDistance = await getSimulatedDistance(homeAddress, facilityLocation);
@@ -92,12 +85,12 @@ export const DistanceDisplay: React.FC<DistanceDisplayProps> = ({
         const qualifyingDistance = getQualifyingDistance();
         const doesQualify = simulatedDistance >= qualifyingDistance;
         setQualifies(doesQualify);
-        
+
         // Notify parent component if callback provided
         if (onDistanceCalculated) {
           onDistanceCalculated(simulatedDistance, doesQualify);
         }
-        
+
         setError('Using simulated distance (for demonstration)');
       } catch (simError) {
         setError('Unable to calculate distance. Please check addresses and try again.');
@@ -110,23 +103,23 @@ export const DistanceDisplay: React.FC<DistanceDisplayProps> = ({
   return (
     <div className="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
       <h3 className="text-lg font-medium text-gray-900 mb-2">Distance Information</h3>
-      
+
       {!homeAddress && (
         <div className="p-3 bg-yellow-50 text-yellow-700 rounded-md mb-3">
           <p>Please set your home address in your profile to calculate distance.</p>
         </div>
       )}
-      
+
       {homeAddress && facilityLocation && (
         <div className="mb-3">
           <p className="text-sm text-gray-500 mb-1">From: <span className="font-medium text-gray-700">{homeAddress}</span></p>
           <p className="text-sm text-gray-500 mb-1">To: <span className="font-medium text-gray-700">{facilityName || facilityLocation}</span></p>
         </div>
       )}
-      
+
       <div className="mb-4">
         <label className="block text-sm font-medium text-gray-700 mb-1">
-          Travel Agency
+          Agency Type
         </label>
         <div className="flex gap-2">
           <select
@@ -136,14 +129,12 @@ export const DistanceDisplay: React.FC<DistanceDisplayProps> = ({
           >
             {Object.keys(AGENCY_DISTANCE_REQUIREMENTS).map(agency => (
               <option key={agency} value={agency}>
-                {agency} {agency !== 'Other' && agency !== 'Custom' ? 
-                  `(${AGENCY_DISTANCE_REQUIREMENTS[agency as keyof typeof AGENCY_DISTANCE_REQUIREMENTS]} miles)` : 
-                  ''}
+                {agency}
               </option>
             ))}
             <option value="Custom">Custom Distance</option>
           </select>
-          
+
           {selectedAgency === 'Custom' && (
             <div className="flex-shrink-0 w-24">
               <input
@@ -162,7 +153,7 @@ export const DistanceDisplay: React.FC<DistanceDisplayProps> = ({
           Different agencies have different distance requirements for tax-free stipend qualification.
         </p>
       </div>
-      
+
       {distance !== null && (
         <div className="mb-4">
           <div className="flex items-center mb-2">
@@ -172,28 +163,28 @@ export const DistanceDisplay: React.FC<DistanceDisplayProps> = ({
               {qualifies ? 'Qualifies' : 'Does not qualify'}
             </span>
           </div>
-          
+
           <p className="text-xs text-gray-500 mb-2">
             Straight-line distance ("as the bird flies")
           </p>
-          
-          <QualificationSpectrum 
-            distance={distance} 
-            minDistance={getQualifyingDistance()} 
+
+          <QualificationSpectrum
+            distance={distance}
+            minDistance={getQualifyingDistance()}
           />
-          
+
           {error && (
             <p className="mt-2 text-xs text-amber-600">{error}</p>
           )}
-          
+
           <div className="mt-3 p-3 bg-blue-50 rounded-md">
             <p className="text-sm text-blue-800">
-              <strong>Note:</strong> {selectedAgency !== 'Custom' ? selectedAgency : 'This agency'} requires a minimum distance of <strong>{getQualifyingDistance()} miles</strong> to qualify for tax-free meal and housing stipends.
+              <strong>Note:</strong> Your selected agency type requires a minimum distance of <strong>{getQualifyingDistance()} miles</strong> to qualify for tax-free meal and housing stipends.
             </p>
           </div>
         </div>
       )}
-      
+
       <div className="mt-3">
         <button
           onClick={calculateDistanceNow}
@@ -206,7 +197,7 @@ export const DistanceDisplay: React.FC<DistanceDisplayProps> = ({
         >
           {loading ? 'Calculating...' : distance === null ? 'Calculate Distance' : 'Recalculate'}
         </button>
-        
+
         {error && error !== 'Using simulated distance (for demonstration)' && (
           <p className="mt-2 text-sm text-red-600">{error}</p>
         )}
