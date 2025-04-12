@@ -1,15 +1,15 @@
-import React, { useState, useCallback, useMemo, useEffect } from 'react';
-import { Calculator, CheckCircle, AlertCircle, Star, Lightbulb, Trash2, Plus, MessageSquare, Settings, MapPin } from 'lucide-react';
-import { useContractScore } from './hooks/useContractScore';
-import { BarChart as RechartsBarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import { Tab } from '@headlessui/react';
+import { Toaster, toast } from 'react-hot-toast';
+import { BarChart as RechartsBarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { Plus, Trash2, MapPin, X, MessageSquare, Settings, Calculator, Star, CheckCircle, AlertCircle, Lightbulb } from 'lucide-react';
 import { ContractStorageButton } from './components/ContractStorageButton';
 import { ChatPanel } from './components/ChatPanel';
 import { SettingsPanel } from './components/SettingsPanel';
 import { AddressInput } from './components/distance-calculator/AddressInput';
 import { QualificationSpectrum } from './components/distance-calculator/QualificationSpectrum';
 import { calculateDistance, getSimulatedDistance } from './services/geolocation';
-import { toast, Toaster } from 'react-hot-toast';
+import { useContractScore } from './hooks/useContractScore';
 
 interface Assignment {
   id: string;
@@ -96,6 +96,7 @@ function App() {
   const [selectedContractId, setSelectedContractId] = useState<string>(initialAssignment.id);
   const [userHomeAddress, setUserHomeAddress] = useState<string>('');
   const [showUserProfile, setShowUserProfile] = useState(false);
+  const [tempHomeAddress, setTempHomeAddress] = useState<string>('');
 
   // Track field validation
   const [fieldValidation, setFieldValidation] = useState<{ [key: string]: boolean }>({});
@@ -385,6 +386,11 @@ function App() {
     setSelectedContractId(id);
   }, []);
 
+  const saveHomeAddress = () => {
+    setUserHomeAddress(tempHomeAddress);
+    setShowUserProfile(false);
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       <Toaster position="top-right" />
@@ -430,9 +436,10 @@ function App() {
             <div className="mt-4">
               <AddressInput
                 label="Your Home Address"
-                value={userHomeAddress}
-                onChange={setUserHomeAddress}
+                value={tempHomeAddress}
+                onChange={setTempHomeAddress}
                 placeholder="Enter your permanent tax home address"
+                includeFacilities={true}
               />
               <p className="mt-1 text-sm text-gray-500">
                 This address will be used for all distance calculations
@@ -545,8 +552,12 @@ function App() {
                           <AddressInput
                             label=""
                             value={assignment.location}
-                            onChange={(value) => handleInputChange({ target: { name: 'location', value } }, assignment.id)}
-                            placeholder="Enter facility address"
+                            onChange={(value) => {
+                              const e = { target: { name: 'location', value } };
+                              handleInputChange(e, assignment.id);
+                            }}
+                            placeholder="Enter facility name or address"
+                            includeFacilities={true}
                           />
                           {fieldValidation[`${assignment.id}-location`] && (
                             <div className="text-green-500 mt-1">
@@ -1436,6 +1447,47 @@ function App() {
                     ))}
                   </tbody>
                 </table>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {showUserProfile && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg p-6 w-full max-w-md">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-xl font-semibold">User Profile</h2>
+                <button onClick={() => setShowUserProfile(false)} className="text-gray-500 hover:text-gray-700">
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+              
+              <div className="mb-4">
+                <AddressInput
+                  label="Home Address"
+                  value={tempHomeAddress}
+                  onChange={setTempHomeAddress}
+                  placeholder="Enter your home address"
+                  includeFacilities={true}
+                />
+                <p className="text-sm text-gray-500 mt-1">
+                  This address will be used for all distance calculations.
+                </p>
+              </div>
+              
+              <div className="flex justify-end space-x-2">
+                <button
+                  onClick={() => setShowUserProfile(false)}
+                  className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={saveHomeAddress}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                >
+                  Save
+                </button>
               </div>
             </div>
           </div>

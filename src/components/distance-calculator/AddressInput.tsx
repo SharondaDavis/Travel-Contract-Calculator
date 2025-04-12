@@ -6,11 +6,15 @@ interface AddressInputProps {
   onChange: (value: string) => void;
   placeholder?: string;
   disabled?: boolean;
+  includeFacilities?: boolean; // New prop to enable facility name lookup
 }
 
 interface AddressSuggestion {
   place_id: string;
   description: string;
+  facility_name?: string; // Optional facility name
+  address?: string; // Full address when suggestion is a facility
+  type?: 'address' | 'facility'; // Type of suggestion
 }
 
 export function AddressInput({ 
@@ -18,7 +22,8 @@ export function AddressInput({
   value, 
   onChange, 
   placeholder = 'Enter address', 
-  disabled = false 
+  disabled = false,
+  includeFacilities = false
 }: AddressInputProps) {
   const [suggestions, setSuggestions] = useState<AddressSuggestion[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -64,7 +69,7 @@ export function AddressInput({
       try {
         // In a real implementation, this would call a geocoding API like Google Places API
         // For demo purposes, we'll simulate the API response with some mock data
-        const mockSuggestions = await simulateAddressLookup(debouncedValue);
+        const mockSuggestions = await simulateAddressLookup(debouncedValue, includeFacilities);
         setSuggestions(mockSuggestions);
         setShowSuggestions(mockSuggestions.length > 0);
       } catch (error) {
@@ -75,12 +80,12 @@ export function AddressInput({
     }
 
     fetchSuggestions();
-  }, [debouncedValue, disabled]);
+  }, [debouncedValue, disabled, includeFacilities]);
 
   // Simulate address lookup API
-  const simulateAddressLookup = async (query: string): Promise<AddressSuggestion[]> => {
+  const simulateAddressLookup = async (query: string, includeFacilities: boolean): Promise<AddressSuggestion[]> => {
     // In a production environment, this would be replaced with a real API call
-    // For example: return axios.get(`/api/places/autocomplete?input=${query}`).then(res => res.data);
+    // For example: return axios.get(`/api/places/autocomplete?input=${query}&types=address,establishment`).then(res => res.data);
     
     // For demo purposes, we'll return mock data based on the input
     await new Promise(resolve => setTimeout(resolve, 200)); // Simulate network delay
@@ -110,18 +115,84 @@ export function AddressInput({
       'Washington, DC'
     ];
     
+    // Mock healthcare facilities with addresses
+    const facilities = [
+      { name: 'Memorial Hospital', address: '123 Main St, New York, NY 10001' },
+      { name: 'City Medical Center', address: '456 Oak Ave, Los Angeles, CA 90001' },
+      { name: 'University Hospital', address: '789 University Blvd, Chicago, IL 60601' },
+      { name: 'General Hospital', address: '321 Center St, Houston, TX 77001' },
+      { name: 'St. Mary\'s Medical Center', address: '555 Health Way, Phoenix, AZ 85001' },
+      { name: 'County Hospital', address: '777 County Road, Philadelphia, PA 19019' },
+      { name: 'Children\'s Hospital', address: '888 Pediatric Lane, San Antonio, TX 78201' },
+      { name: 'Veterans Medical Center', address: '999 Veterans Blvd, San Diego, CA 92101' },
+      { name: 'Community Hospital', address: '111 Community Circle, Dallas, TX 75201' },
+      { name: 'Mercy Hospital', address: '222 Mercy Drive, San Jose, CA 95101' },
+      { name: 'Regional Medical Center', address: '333 Regional Pkwy, Austin, TX 78701' },
+      { name: 'Baptist Hospital', address: '444 Faith Street, Jacksonville, FL 32099' },
+      { name: 'Presbyterian Medical', address: '666 Church Road, San Francisco, CA 94101' },
+      { name: 'Kaiser Permanente', address: '777 Health Blvd, Seattle, WA 98101' },
+      { name: 'Mayo Clinic', address: '888 Research Drive, Rochester, MN 55901' },
+      { name: 'Cleveland Clinic', address: '999 Excellence Way, Cleveland, OH 44101' },
+      { name: 'Johns Hopkins Hospital', address: '111 Academic Circle, Baltimore, MD 21201' },
+      { name: 'Massachusetts General', address: '222 Medical Drive, Boston, MA 02101' },
+      { name: 'Cedars-Sinai', address: '333 Cedar Avenue, Los Angeles, CA 90048' },
+      { name: 'NYU Langone', address: '444 University Place, New York, NY 10016' }
+    ];
+    
+    let results: AddressSuggestion[] = [];
+    
+    // Add address suggestions
     const filteredCities = cities
       .filter(city => city.toLowerCase().includes(query.toLowerCase()))
       .map((description, index) => ({
         place_id: `place_id_${index}_${Date.now()}`,
-        description
+        description,
+        type: 'address' as 'address'
       }));
     
-    return filteredCities;
+    results = [...results, ...filteredCities];
+    
+    // Add facility suggestions if enabled
+    if (includeFacilities) {
+      const filteredFacilities = facilities
+        .filter(facility => 
+          facility.name.toLowerCase().includes(query.toLowerCase()) || 
+          facility.address.toLowerCase().includes(query.toLowerCase())
+        )
+        .map((facility, index) => ({
+          place_id: `facility_id_${index}_${Date.now()}`,
+          description: `${facility.name} (${facility.address})`,
+          facility_name: facility.name,
+          address: facility.address,
+          type: 'facility' as 'facility'
+        }));
+      
+      results = [...results, ...filteredFacilities];
+    }
+    
+    // Sort results: facilities first (if searching by facility), then addresses
+    results.sort((a, b) => {
+      // If searching by facility name and both are facilities, sort alphabetically
+      if (includeFacilities && a.type === 'facility' && b.type === 'facility') {
+        return (a.facility_name || '').localeCompare(b.facility_name || '');
+      }
+      
+      // Facilities first when searching by facility name
+      if (includeFacilities) {
+        if (a.type === 'facility' && b.type !== 'facility') return -1;
+        if (a.type !== 'facility' && b.type === 'facility') return 1;
+      }
+      
+      return a.description.localeCompare(b.description);
+    });
+    
+    return results;
   };
 
   const handleSuggestionClick = (suggestion: AddressSuggestion) => {
-    onChange(suggestion.description);
+    // If it's a facility, use the address
+    const valueToUse = suggestion.type === 'facility' ? suggestion.address || suggestion.description : suggestion.description;
+    onChange(valueToUse);
     setShowSuggestions(false);
     inputRef.current?.focus();
   };
@@ -138,7 +209,7 @@ export function AddressInput({
           value={value}
           onChange={(e) => onChange(e.target.value)}
           onFocus={() => value.length >= 3 && setShowSuggestions(true)}
-          placeholder={placeholder}
+          placeholder={includeFacilities ? 'Enter facility name or address' : placeholder}
           disabled={disabled}
           className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100"
         />
@@ -163,11 +234,22 @@ export function AddressInput({
               onClick={() => handleSuggestionClick(suggestion)}
               className="cursor-pointer select-none relative py-2 pl-3 pr-9 hover:bg-blue-50"
             >
-              <div className="flex items-center">
-                <span className="font-normal block truncate">
-                  {suggestion.description}
-                </span>
-              </div>
+              {suggestion.type === 'facility' ? (
+                <div className="flex flex-col">
+                  <span className="font-medium text-blue-600">
+                    {suggestion.facility_name}
+                  </span>
+                  <span className="text-sm text-gray-500">
+                    {suggestion.address}
+                  </span>
+                </div>
+              ) : (
+                <div className="flex items-center">
+                  <span className="font-normal block truncate">
+                    {suggestion.description}
+                  </span>
+                </div>
+              )}
             </div>
           ))}
         </div>
