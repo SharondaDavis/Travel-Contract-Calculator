@@ -9,6 +9,7 @@ interface FacilityInputProps {
   id: string;
   fieldValidation: { [key: string]: boolean };
   homeAddress: string;
+  agencyName?: string;
   onDistanceCalculated?: (distance: number, qualifies: boolean) => void;
   showDistanceDisplay?: boolean;
 }
@@ -20,6 +21,7 @@ export const FacilityInput: React.FC<FacilityInputProps> = ({
   id,
   fieldValidation,
   homeAddress,
+  agencyName = 'Other',
   onDistanceCalculated,
   showDistanceDisplay = true
 }) => {
@@ -41,7 +43,7 @@ export const FacilityInput: React.FC<FacilityInputProps> = ({
           // Call the combined handler
           onFacilityChange(facilityNameValue, locationValue);
         }}
-        placeholder="Search for facility name or address"
+        placeholder="Type facility name or full address (e.g., 123 Main St, City, State)"
         includeFacilities={true}
         returnMetadata={true}
       />
@@ -66,6 +68,7 @@ export const FacilityInput: React.FC<FacilityInputProps> = ({
           homeAddress={homeAddress}
           facilityLocation={location}
           facilityName={facilityName}
+          agencyName={agencyName}
           onDistanceCalculated={onDistanceCalculated}
         />
       )}

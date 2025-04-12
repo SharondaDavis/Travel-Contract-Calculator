@@ -27,6 +27,7 @@ interface Assignment {
   mealStipend: string;
   transportationStipend: string;
   otherStipend: string;
+  transportationType: string;
   transportationCost: string;
   housingCost: string;
   foodCost: string;
@@ -50,6 +51,7 @@ interface Assignment {
   userHomeAddress: string;
   distanceToAssignment?: number;
   distanceQualifies?: boolean;
+  agency: string;
 }
 
 export type { Assignment };
@@ -69,6 +71,7 @@ const initialAssignment: Assignment = {
   mealStipend: '',
   transportationStipend: '',
   otherStipend: '',
+  transportationType: 'personal',
   transportationCost: '',
   housingCost: '',
   foodCost: '',
@@ -85,10 +88,48 @@ const initialAssignment: Assignment = {
   plannedTimeOff: [],
   seasonality: 'summer',
   userHomeAddress: '',
+  agency: 'Other'
 };
 
 function App() {
-  const [assignments, setAssignments] = useState<Assignment[]>([initialAssignment]);
+  const [assignments, setAssignments] = useState<Assignment[]>([
+    {
+      id: '1',
+      facilityName: '',
+      location: '',
+      specialty: '',
+      shiftType: 'day',
+      contractLength: '',
+      startDate: '',
+      endDate: '',
+      hourlyRate: '',
+      weeklyHours: '36',
+      housingStipend: '',
+      mealStipend: '',
+      transportationStipend: '',
+      otherStipend: '',
+      transportationType: 'personal',
+      transportationCost: '',
+      housingCost: '',
+      foodCost: '',
+      otherCost: '',
+      signOnBonus: '',
+      completionBonus: '',
+      referralBonus: '',
+      otherBonus: '',
+      rideshareExpenses: '',
+      commuteDistance: '',
+      fuelCostPerGallon: '',
+      parkingCost: '',
+      data: {},
+      plannedTimeOff: [],
+      seasonality: 'summer',
+      userHomeAddress: '',
+      distanceToAssignment: undefined,
+      distanceQualifies: false,
+      agency: 'Other'
+    }
+  ]);
   const [activeAssignments, setActiveAssignments] = useState<Set<string>>(new Set([initialAssignment.id]));
   const [activeComparisonContracts, setActiveComparisonContracts] = useState<Set<string>>(new Set());
   const [view, setView] = useState<'details' | 'comparison'>('details');
@@ -445,6 +486,8 @@ function App() {
               value={userHomeAddress}
               onChange={(value) => setUserHomeAddress(value)}
               placeholder="Enter your complete home address with city and state"
+              includeFacilities={false}
+              returnMetadata={false}
             />
             <p className="text-xs text-gray-500 mt-1">
               Your home address is used to calculate distance to assignments for tax-free stipend qualification.
@@ -537,6 +580,7 @@ function App() {
                           id={assignment.id}
                           fieldValidation={fieldValidation}
                           homeAddress={userHomeAddress}
+                          agencyName={assignment.agency}
                           onDistanceCalculated={(distance, qualifies) => {
                             // Update the assignment with the calculated distance
                             setAssignments(prev => prev.map(a => {
@@ -1123,6 +1167,44 @@ function App() {
                             placeholder="Enter user home address"
                           />
                           {fieldValidation[`${assignment.id}-userHomeAddress`] && (
+                            <div className="text-green-500 mt-1">
+                              <svg className="w-5 h-5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                              </svg>
+                              <span className="ml-2">Valid</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </section>
+                    <section className="bg-white rounded-xl shadow-lg p-6">
+                      <h2 className="text-xl font-semibold mb-6 flex items-center gap-2">
+                        Agency
+                      </h2>
+                      <div className="space-y-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Agency
+                          </label>
+                          <select
+                            name="agency"
+                            value={assignment.agency}
+                            onChange={(e) => handleInputChange(e, assignment.id)}
+                            className="w-full rounded-lg border-2 border-gray-400 shadow-sm focus:border-2 focus:border-green-600 focus:ring-green-500 transition-colors duration-200 bg-white hover:border-gray-500 px-4 py-2"
+                          >
+                            <option value="Other">Other</option>
+                            <option value="AMN">AMN</option>
+                            <option value="Aya">Aya</option>
+                            <option value="Fusion">Fusion</option>
+                            <option value="Medical Staffing Network">Medical Staffing Network</option>
+                            <option value="MedPro">MedPro</option>
+                            <option value="NuWest">NuWest</option>
+                            <option value="Parallon">Parallon</option>
+                            <option value="Premier">Premier</option>
+                            <option value="Providence">Providence</option>
+                            <option value="Trustaff">Trustaff</option>
+                          </select>
+                          {fieldValidation[`${assignment.id}-agency`] && (
                             <div className="text-green-500 mt-1">
                               <svg className="w-5 h-5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
