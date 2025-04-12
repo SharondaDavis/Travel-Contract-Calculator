@@ -124,13 +124,35 @@ function App() {
     return housing + meals + transportation + other;
   };
 
+  const calculateTakeHomePay = (assignment: Assignment) => {
+    // Calculate taxable income (hourly pay)
+    const weeklyTaxableIncome = calculateTaxableIncome(assignment);
+    
+    // Estimate taxes (using approximate tax rate of 25% for illustration)
+    const estimatedTaxRate = 0.25;
+    const weeklyTaxes = weeklyTaxableIncome * estimatedTaxRate;
+    
+    // Calculate non-taxable income (stipends)
+    const weeklyNonTaxableIncome = calculateNonTaxableIncome(assignment);
+    
+    // Calculate take-home pay
+    const weeklyTakeHome = (weeklyTaxableIncome - weeklyTaxes) + weeklyNonTaxableIncome;
+    
+    return {
+      weeklyTakeHome,
+      weeklyTaxableIncome,
+      weeklyNonTaxableIncome,
+      weeklyTaxes
+    };
+  };
+
   const calculateTransportationExpenses = (assignment: Assignment) => {
     const publicTransport = parseFloat(assignment.transportationCost) || 0;
-    const rideshare = parseFloat(assignment.transportationStipend) || 0;
-    const parking = parseFloat(assignment.housingCost) || 0;
-    const distance = parseFloat(assignment.housingCost) || 0;
-    const fuelCostPerGallon = parseFloat(assignment.foodCost) || 0;
-    const mpg = parseFloat(assignment.transportationStipend) || 25;
+    const rideshare = parseFloat(assignment.rideshareExpenses) || 0;
+    const parking = parseFloat(assignment.parkingCost) || 0;
+    const distance = parseFloat(assignment.commuteDistance) || 0;
+    const fuelCostPerGallon = parseFloat(assignment.fuelCostPerGallon) || 0;
+    const mpg = 25; // Average MPG
     
     // Calculate fuel expenses based on distance, MPG, and cost per gallon (assuming 5 work days)
     // Formula: (distance * 2 * 5 * fuelCostPerGallon) / MPG
@@ -140,19 +162,17 @@ function App() {
   };
 
   const calculateLivingExpenses = (assignment: Assignment) => {
-    const rent = parseFloat(assignment.housingCost) || 0;
-    const utilities = parseFloat(assignment.foodCost) || 0;
-    const groceries = parseFloat(assignment.otherCost) || 0;
-    return rent + utilities + groceries;
+    const housing = parseFloat(assignment.housingCost) || 0;
+    const food = parseFloat(assignment.foodCost) || 0;
+    const other = parseFloat(assignment.otherCost) || 0;
+    return housing + food + other;
   };
 
   const calculateExpenses = (assignment: Assignment) => {
-    const housing = parseFloat(assignment.housingCost) || 0;
-    const health = parseFloat(assignment.housingStipend) || 0;
-    const travel = parseFloat(assignment.transportationCost) || 0;
+    // We only want to count actual expenses, not stipends
     const transportation = calculateTransportationExpenses(assignment);
     const living = calculateLivingExpenses(assignment);
-    return housing + health + travel + transportation + living;
+    return transportation + living;
   };
 
   const calculateTotalBonuses = (assignment: Assignment) => {
@@ -164,22 +184,27 @@ function App() {
   };
 
   const calculateNetIncome = (assignment: Assignment) => {
-    const taxableIncome = calculateTaxableIncome(assignment);
-    const nonTaxableIncome = calculateNonTaxableIncome(assignment);
+    const { weeklyTakeHome } = calculateTakeHomePay(assignment);
     const expenses = calculateExpenses(assignment);
-    const weeklyBonuses = calculateTotalBonuses(assignment) / (parseFloat(assignment.contractLength) || 13);
-    
-    // Simplified tax calculation (30% of taxable income)
-    const estimatedTax = taxableIncome * 0.3;
-    
-    return (taxableIncome - estimatedTax + nonTaxableIncome - expenses + weeklyBonuses).toFixed(2);
+
+    // Calculate weekly net (take-home pay minus expenses)
+    return (weeklyTakeHome - expenses).toFixed(2);
   };
 
   const calculateTotalContractValue = (assignment: Assignment) => {
-    const weeklyNet = parseFloat(calculateNetIncome(assignment));
+    const { weeklyTakeHome } = calculateTakeHomePay(assignment);
     const weeks = parseFloat(assignment.contractLength) || 13;
     const bonuses = calculateTotalBonuses(assignment);
-    return (weeklyNet * weeks + bonuses).toFixed(2);
+    
+    // Calculate total from weekly take-home (before expenses)
+    const totalFromWeekly = weeklyTakeHome * weeks;
+    
+    // Calculate total expenses for the contract duration
+    const weeklyExpenses = calculateExpenses(assignment);
+    const totalExpenses = weeklyExpenses * weeks;
+    
+    // Calculate final total: (weekly take-home - expenses) * weeks + bonuses
+    return (totalFromWeekly - totalExpenses + bonuses).toFixed(2);
   };
 
   const taxableRatio = (assignment: Assignment) => {
@@ -1028,18 +1053,87 @@ function App() {
                       <div className="bg-white/10 rounded-lg p-6">
                         <h4 className="text-lg font-medium mb-4">Weekly Breakdown</h4>
                         <div className="space-y-3">
-                          <div className="flex justify-between items-center">
-                            <span>Gross Income:</span>
-                            <span className="font-semibold">${(calculateTaxableIncome(assignment) + calculateNonTaxableIncome(assignment)).toFixed(2)}</span>
+                          {/* Income Section */}
+                          <div>
+                            <div className="text-sm text-white/80 mb-2">Weekly Income</div>
+                            <div className="flex justify-between items-center">
+                              <span>Base Pay (Taxable):</span>
+                              <span className="font-semibold">${calculateTaxableIncome(assignment).toFixed(2)}</span>
+                            </div>
+                            <div className="flex justify-between items-center">
+                              <span>Housing Stipend:</span>
+                              <span className="font-semibold text-green-300">+${parseFloat(assignment.housingStipend || '0').toFixed(2)}</span>
+                            </div>
+                            <div className="flex justify-between items-center">
+                              <span>Meal Stipend:</span>
+                              <span className="font-semibold text-green-300">+${parseFloat(assignment.mealStipend || '0').toFixed(2)}</span>
+                            </div>
+                            <div className="flex justify-between items-center">
+                              <span>Other Stipends:</span>
+                              <span className="font-semibold text-green-300">+${(parseFloat(assignment.transportationStipend || '0') + parseFloat(assignment.otherStipend || '0')).toFixed(2)}</span>
+                            </div>
                           </div>
-                          <div className="flex justify-between items-center">
-                            <span>Total Expenses:</span>
-                            <span className="font-semibold">-${calculateExpenses(assignment).toFixed(2)}</span>
+
+                          {/* Deductions Section */}
+                          <div className="h-px bg-white/20 my-2"></div>
+                          <div>
+                            <div className="text-sm text-white/80 mb-2">Weekly Deductions</div>
+                            <div className="flex justify-between items-center">
+                              <span>Total Expenses:</span>
+                              <span className="font-semibold text-red-300">-${calculateExpenses(assignment).toFixed(2)}</span>
+                            </div>
+                            <div className="flex justify-between items-center">
+                              <span>Estimated Tax (30%):</span>
+                              <span className="font-semibold text-red-300">-${(calculateTaxableIncome(assignment) * 0.3).toFixed(2)}</span>
+                            </div>
                           </div>
-                          <div className="flex justify-between items-center">
-                            <span>Estimated Tax (30%):</span>
-                            <span className="font-semibold">-${(calculateTaxableIncome(assignment) * 0.3).toFixed(2)}</span>
+
+                          {/* Weekly Take-Home Pay Breakdown */}
+                          <div className="bg-white rounded-lg p-6 mb-6 shadow-sm">
+                            <h4 className="text-lg font-medium mb-4">Weekly Take-Home Pay Breakdown</h4>
+                            {(() => {
+                              const {
+                                weeklyTakeHome,
+                                weeklyTaxableIncome,
+                                weeklyNonTaxableIncome,
+                                weeklyTaxes
+                              } = calculateTakeHomePay(assignment);
+                              return (
+                                <div className="space-y-3">
+                                  <div className="flex justify-between items-center">
+                                    <span>Hourly Pay (Taxable):</span>
+                                    <span className="text-gray-900">${weeklyTaxableIncome.toFixed(2)}</span>
+                                  </div>
+                                  <div className="flex justify-between items-center">
+                                    <span>Estimated Taxes:</span>
+                                    <span className="text-red-600">-${weeklyTaxes.toFixed(2)}</span>
+                                  </div>
+                                  <div className="flex justify-between items-center">
+                                    <span>Weekly Stipends (Non-Taxable):</span>
+                                    <span className="text-green-600">+${weeklyNonTaxableIncome.toFixed(2)}</span>
+                                  </div>
+                                  <div className="h-px bg-gray-200 my-2"></div>
+                                  <div className="flex justify-between items-center font-medium">
+                                    <span>Total Weekly Take-Home:</span>
+                                    <span className="text-xl text-blue-600">${weeklyTakeHome.toFixed(2)}</span>
+                                  </div>
+                                </div>
+                              );
+                            })()}
                           </div>
+
+                          {/* Weekly Net Income (After Expenses) */}
+                          <div className="bg-white rounded-lg p-6 mb-6 shadow-sm">
+                            <h4 className="text-lg font-medium mb-4">Weekly Net Income (After Expenses)</h4>
+                            <div className="flex justify-between items-center mb-2">
+                              <span>Weekly Net Income:</span>
+                              <div className="text-xl">
+                                <span>${calculateNetIncome(assignment)}</span>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Final Take Home */}
                           <div className="h-px bg-white/20 my-2"></div>
                           <div className="flex justify-between items-center text-lg font-bold">
                             <span>Estimated Take Home:</span>
