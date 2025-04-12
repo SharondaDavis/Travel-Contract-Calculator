@@ -1,11 +1,14 @@
-import React, { useState, useCallback, useMemo } from 'react';
-import { Calculator, CheckCircle, AlertCircle, Star, Lightbulb, Trash2, Plus, MessageSquare, Settings } from 'lucide-react';
+import React, { useState, useCallback, useMemo, useEffect } from 'react';
+import { Calculator, CheckCircle, AlertCircle, Star, Lightbulb, Trash2, Plus, MessageSquare, Settings, MapPin } from 'lucide-react';
 import { useContractScore } from './hooks/useContractScore';
 import { BarChart as RechartsBarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { Tab } from '@headlessui/react';
 import { ContractStorageButton } from './components/ContractStorageButton';
 import { ChatPanel } from './components/ChatPanel';
 import { SettingsPanel } from './components/SettingsPanel';
+import { AddressInput } from './components/distance-calculator/AddressInput';
+import { QualificationSpectrum } from './components/distance-calculator/QualificationSpectrum';
+import { calculateDistance, getSimulatedDistance } from './services/geolocation';
 import { toast, Toaster } from 'react-hot-toast';
 
 interface Assignment {
@@ -43,6 +46,9 @@ interface Assignment {
   };
   plannedTimeOff: string[];
   seasonality: string;
+  userHomeAddress: string;
+  distanceToAssignment?: number;
+  distanceQualifies?: boolean;
 }
 
 export type { Assignment };
@@ -76,7 +82,8 @@ const initialAssignment: Assignment = {
   parkingCost: '',
   data: {},
   plannedTimeOff: [],
-  seasonality: 'summer'
+  seasonality: 'summer',
+  userHomeAddress: '',
 };
 
 function App() {
@@ -87,11 +94,28 @@ function App() {
   const [showChat, setShowChat] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [selectedContractId, setSelectedContractId] = useState<string>(initialAssignment.id);
+  const [userHomeAddress, setUserHomeAddress] = useState<string>('');
+  const [showUserProfile, setShowUserProfile] = useState(false);
 
   // Track field validation
   const [fieldValidation, setFieldValidation] = useState<{ [key: string]: boolean }>({});
 
-  const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>, id: string) => {
+  // Load home address from localStorage on initial render
+  useEffect(() => {
+    const savedHomeAddress = localStorage.getItem('userHomeAddress');
+    if (savedHomeAddress) {
+      setUserHomeAddress(savedHomeAddress);
+    }
+  }, []);
+
+  // Save home address to localStorage whenever it changes
+  useEffect(() => {
+    if (userHomeAddress) {
+      localStorage.setItem('userHomeAddress', userHomeAddress);
+    }
+  }, [userHomeAddress]);
+
+  const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement> | { target: { name: string; value: string } }, id: string) => {
     const { name, value } = e.target;
     setAssignments(prev => prev.map(assignment => 
       assignment.id === id ? { ...assignment, [name]: value } : assignment
@@ -102,6 +126,58 @@ function App() {
       [`${id}-${name}`]: value.trim() !== ''
     }));
   }, []);
+
+  const calculateAndUpdateDistance = async (id: string, homeAddress: string, assignmentAddress: string) => {
+    if (!homeAddress || !assignmentAddress) {
+      toast.error('Both home and assignment addresses are required');
+      return;
+    }
+    
+    toast.loading('Calculating distance...');
+    
+    try {
+      // Calculate straight-line distance using the existing service
+      const distance = await calculateDistance(homeAddress, assignmentAddress);
+      
+      // Update the assignment with the calculated distance
+      setAssignments(prev => prev.map(assignment => {
+        if (assignment.id === id) {
+          const minDistance = 45; // Default minimum distance
+          return {
+            ...assignment,
+            distanceToAssignment: distance,
+            distanceQualifies: distance >= minDistance
+          };
+        }
+        return assignment;
+      }));
+      
+      toast.dismiss();
+      toast.success('Distance calculated successfully!');
+    } catch (error) {
+      console.error('Error calculating distance:', error);
+      toast.dismiss();
+      
+      // Fallback to simulation if real calculation fails
+      try {
+        const simulatedDistance = getSimulatedDistance(homeAddress, assignmentAddress);
+        setAssignments(prev => prev.map(assignment => {
+          if (assignment.id === id) {
+            const minDistance = 45; // Default minimum distance
+            return {
+              ...assignment,
+              distanceToAssignment: simulatedDistance,
+              distanceQualifies: simulatedDistance >= minDistance
+            };
+          }
+          return assignment;
+        }));
+        toast.success('Using simulated distance calculation.');
+      } catch (simError) {
+        toast.error('Error calculating distance. Please check addresses and try again.');
+      }
+    }
+  };
 
   const addNewAssignment = () => {
     const newId = (assignments.length + 1).toString();
@@ -338,6 +414,39 @@ function App() {
             </div>
         </header>
 
+        {/* User Profile Section */}
+        <div className="bg-white rounded-lg shadow-md p-4 mb-6">
+          <div className="flex items-center justify-between">
+            <h3 className="text-lg font-medium">Your Profile</h3>
+            <button 
+              onClick={() => setShowUserProfile(!showUserProfile)}
+              className="text-blue-600 hover:text-blue-800"
+            >
+              {showUserProfile ? 'Hide' : 'Edit'}
+            </button>
+          </div>
+          
+          {showUserProfile && (
+            <div className="mt-4">
+              <AddressInput
+                label="Your Home Address"
+                value={userHomeAddress}
+                onChange={setUserHomeAddress}
+                placeholder="Enter your permanent tax home address"
+              />
+              <p className="mt-1 text-sm text-gray-500">
+                This address will be used for all distance calculations
+              </p>
+            </div>
+          )}
+          
+          {!showUserProfile && userHomeAddress && (
+            <div className="mt-2 text-sm text-gray-600">
+              <span className="font-medium">Home Address:</span> {userHomeAddress}
+            </div>
+          )}
+        </div>
+
         {/* View Toggle */}
         <div className="mb-6">
           <Tab.Group selectedIndex={view === 'details' ? 0 : 1} onChange={(index) => setView(index === 0 ? 'details' : 'comparison')}>
@@ -433,13 +542,11 @@ function App() {
                           <label className="block text-sm font-medium text-gray-700 mb-1">
                             Location
                           </label>
-                          <input
-                            type="text"
-                            name="location"
+                          <AddressInput
+                            label=""
                             value={assignment.location}
-                            onChange={(e) => handleInputChange(e, assignment.id)}
-                            className="w-full rounded-lg border-2 border-gray-400 shadow-sm focus:border-2 focus:border-green-600 focus:ring-green-500 transition-colors duration-200 bg-white hover:border-gray-500 px-4 py-2"
-                            placeholder="City, State"
+                            onChange={(value) => handleInputChange({ target: { name: 'location', value } }, assignment.id)}
+                            placeholder="Enter facility address"
                           />
                           {fieldValidation[`${assignment.id}-location`] && (
                             <div className="text-green-500 mt-1">
@@ -789,6 +896,69 @@ function App() {
                           )}
                         </div>
 
+                        {/* Distance Qualification Section */}
+                        <div className="pt-4 border-t">
+                          <h3 className="text-sm font-medium text-gray-700 mb-3 flex items-center gap-2">
+                            <MapPin className="h-4 w-4" />
+                            Distance Qualification
+                          </h3>
+                          
+                          {!userHomeAddress ? (
+                            <div className="p-4 bg-yellow-50 text-yellow-700 rounded-lg">
+                              <p>Please set your home address in your profile to calculate distance qualification.</p>
+                              <button 
+                                onClick={() => setShowUserProfile(true)}
+                                className="mt-2 text-blue-600 hover:underline"
+                              >
+                                Set Home Address
+                              </button>
+                            </div>
+                          ) : (
+                            <>
+                              <div className="flex items-center justify-between mb-4">
+                                <div>
+                                  <p className="text-sm font-medium text-gray-700">Distance from home to assignment:</p>
+                                  {assignment.distanceToAssignment !== undefined ? (
+                                    <div className="mt-1 flex items-center">
+                                      <span className="text-lg font-bold">
+                                        {assignment.distanceToAssignment.toFixed(1)} miles
+                                      </span>
+                                      <span className="ml-2 px-2 py-1 text-xs rounded-full" style={{ 
+                                        backgroundColor: assignment.distanceQualifies ? '#d1fae5' : '#fee2e2',
+                                        color: assignment.distanceQualifies ? '#047857' : '#b91c1c'
+                                      }}>
+                                        {assignment.distanceQualifies ? 'Qualifies' : 'Does not qualify'}
+                                      </span>
+                                    </div>
+                                  ) : (
+                                    <p className="text-sm text-gray-500">Not calculated yet</p>
+                                  )}
+                                </div>
+                                
+                                <button
+                                  onClick={() => calculateAndUpdateDistance(assignment.id, userHomeAddress, assignment.location)}
+                                  disabled={!userHomeAddress || !assignment.location}
+                                  className="py-2 px-4 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:bg-gray-400 transition-colors text-sm"
+                                >
+                                  Calculate Distance
+                                </button>
+                              </div>
+                              
+                              {assignment.distanceToAssignment !== undefined && (
+                                <div className="mt-2">
+                                  <p className="text-sm text-gray-700 mb-2">
+                                    Distance calculated "as the bird flies" (straight-line distance)
+                                  </p>
+                                  <QualificationSpectrum 
+                                    distance={assignment.distanceToAssignment} 
+                                    minDistance={45} 
+                                  />
+                                </div>
+                              )}
+                            </>
+                          )}
+                        </div>
+
                           {assignment.shiftType === 'public' && (
                           <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -980,6 +1150,34 @@ function App() {
                         </div>
                       </div>
                     </section>
+                    <section className="bg-white rounded-xl shadow-lg p-6">
+                      <h2 className="text-xl font-semibold mb-6 flex items-center gap-2">
+                        User Home Address
+                      </h2>
+                      <div className="space-y-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            User Home Address
+                          </label>
+                          <input
+                            type="text"
+                            name="userHomeAddress"
+                            value={assignment.userHomeAddress}
+                            onChange={(e) => handleInputChange(e, assignment.id)}
+                            className="w-full rounded-lg border-2 border-gray-400 shadow-sm focus:border-2 focus:border-green-600 focus:ring-green-500 transition-colors duration-200 bg-white hover:border-gray-500 px-4 py-2"
+                            placeholder="Enter user home address"
+                          />
+                          {fieldValidation[`${assignment.id}-userHomeAddress`] && (
+                            <div className="text-green-500 mt-1">
+                              <svg className="w-5 h-5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                              </svg>
+                              <span className="ml-2">Valid</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </section>
                   </div>
 
                   {/* Calculation Explanation Section */}
@@ -1159,80 +1357,86 @@ function App() {
             })}
           </div>
         ) : (
-          <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
-            <h3 className="text-lg font-semibold mb-4">Contract Comparison</h3>
-            
-            {/* Contract Filter Buttons */}
-            <div className="flex gap-2 mb-6 flex-wrap">
-              {assignments.map((assignment) => (
-                <button
-                  key={assignment.id}
-                  onClick={() => toggleContractInComparison(assignment.id)}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200 ${
-                    activeComparisonContracts.has(assignment.id)
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                  }`}
-                >
-                  {assignment.facilityName || `Contract ${assignment.id}`}
-                </button>
-              ))}
-            </div>
-            
-            {/* Weekly Net Income Comparison */}
-            <div className="mb-8">
-              <h4 className="text-md font-medium mb-4">Weekly Net Income Comparison</h4>
-              <ResponsiveContainer width="100%" height={300}>
-                <RechartsBarChart data={comparisonData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="name" />
-                  <YAxis />
-                  <Tooltip />
-                  <Bar dataKey="weeklyNet" fill="#3B82F6" name="Weekly Net Income" />
-                </RechartsBarChart>
-              </ResponsiveContainer>
-            </div>
-
-            {/* Total Contract Value Comparison */}
-            <div className="mb-8">
-              <h4 className="text-md font-medium mb-4">Total Contract Value Comparison</h4>
-              <ResponsiveContainer width="100%" height={300}>
-                <RechartsBarChart data={comparisonData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="name" />
-                  <YAxis />
-                  <Tooltip />
-                  <Bar dataKey="totalValue" fill="#10B981" name="Total Contract Value" />
-                </RechartsBarChart>
-              </ResponsiveContainer>
-            </div>
-
-            {/* Detailed Comparison Table */}
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead>
-                  <tr>
-                    <th className="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contract</th>
-                    <th className="px-6 py-3 bg-gray-50 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Weekly Income</th>
-                    <th className="px-6 py-3 bg-gray-50 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Weekly Stipends</th>
-                    <th className="px-6 py-3 bg-gray-50 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Weekly Expenses</th>
-                    <th className="px-6 py-3 bg-gray-50 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Weekly Net</th>
-                    <th className="px-6 py-3 bg-gray-50 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Total Value</th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {comparisonData.map((contract) => (
-                    <tr key={contract.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{contract.name}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-500">${contract.weeklyIncome.toFixed(2)}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-500">${contract.weeklyStipends.toFixed(2)}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-500">${contract.weeklyExpenses.toFixed(2)}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-500">${contract.weeklyNet.toFixed(2)}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-500">${contract.totalValue.toFixed(2)}</td>
-                    </tr>
+          <div className="space-y-6">
+            {/* Contract Comparison View */}
+            <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
+              <h3 className="text-lg font-semibold mb-6">Contract Comparison</h3>
+              
+              {/* Contract Selection */}
+              <div className="mb-6">
+                <h4 className="text-lg font-medium mb-3">Select Contracts to Compare</h4>
+                <div className="flex flex-wrap gap-2">
+                  {assignments.map((assignment) => (
+                    <button
+                      key={assignment.id}
+                      onClick={() => toggleContractInComparison(assignment.id)}
+                      className={`flex items-center gap-2 px-4 py-2 rounded-lg ${
+                        activeComparisonContracts.has(assignment.id)
+                          ? 'bg-blue-600 text-white'
+                          : 'bg-white text-gray-700 hover:bg-gray-50'
+                      } shadow-sm transition-colors duration-200`}
+                    >
+                      {assignment.facilityName || `Contract ${assignment.id}`}
+                    </button>
                   ))}
-                </tbody>
-              </table>
+                </div>
+              </div>
+              
+              {/* Weekly Net Income Comparison */}
+              <div className="mb-8">
+                <h4 className="text-md font-medium mb-4">Weekly Net Income Comparison</h4>
+                <ResponsiveContainer width="100%" height={300}>
+                  <RechartsBarChart data={comparisonData}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="name" />
+                    <YAxis />
+                    <Tooltip />
+                    <Bar dataKey="weeklyNet" fill="#3B82F6" name="Weekly Net Income" />
+                  </RechartsBarChart>
+                </ResponsiveContainer>
+              </div>
+
+              {/* Total Contract Value Comparison */}
+              <div className="mb-8">
+                <h4 className="text-md font-medium mb-4">Total Contract Value Comparison</h4>
+                <ResponsiveContainer width="100%" height={300}>
+                  <RechartsBarChart data={comparisonData}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="name" />
+                    <YAxis />
+                    <Tooltip />
+                    <Bar dataKey="totalValue" fill="#10B981" name="Total Contract Value" />
+                  </RechartsBarChart>
+                </ResponsiveContainer>
+              </div>
+
+              {/* Detailed Comparison Table */}
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead>
+                    <tr>
+                      <th className="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contract</th>
+                      <th className="px-6 py-3 bg-gray-50 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Weekly Income</th>
+                      <th className="px-6 py-3 bg-gray-50 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Weekly Stipends</th>
+                      <th className="px-6 py-3 bg-gray-50 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Weekly Expenses</th>
+                      <th className="px-6 py-3 bg-gray-50 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Weekly Net</th>
+                      <th className="px-6 py-3 bg-gray-50 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Total Value</th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {comparisonData.map((contract) => (
+                      <tr key={contract.id} className="hover:bg-gray-50">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{contract.name}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-500">${contract.weeklyIncome.toFixed(2)}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-500">${contract.weeklyStipends.toFixed(2)}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-500">${contract.weeklyExpenses.toFixed(2)}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-500">${contract.weeklyNet.toFixed(2)}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-500">${contract.totalValue.toFixed(2)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
         )}
