@@ -3,18 +3,25 @@ import React, { useState, useEffect, useRef } from 'react';
 interface AddressInputProps {
   label: string;
   value: string;
-  onChange: (value: string) => void;
+  onChange: (value: string, metadata?: AddressSuggestionMetadata) => void;
   placeholder?: string;
   disabled?: boolean;
-  includeFacilities?: boolean; // New prop to enable facility name lookup
+  includeFacilities?: boolean;
+  returnMetadata?: boolean;
 }
 
 interface AddressSuggestion {
   place_id: string;
   description: string;
-  facility_name?: string; // Optional facility name
-  address?: string; // Full address when suggestion is a facility
-  type?: 'address' | 'facility'; // Type of suggestion
+  facility_name?: string;
+  address?: string;
+  type?: 'address' | 'facility';
+}
+
+export interface AddressSuggestionMetadata {
+  facility_name?: string;
+  address?: string;
+  type?: 'address' | 'facility';
 }
 
 export function AddressInput({ 
@@ -23,7 +30,8 @@ export function AddressInput({
   onChange, 
   placeholder = 'Enter address', 
   disabled = false,
-  includeFacilities = false
+  includeFacilities = false,
+  returnMetadata = false
 }: AddressInputProps) {
   const [suggestions, setSuggestions] = useState<AddressSuggestion[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -192,9 +200,26 @@ export function AddressInput({
   const handleSuggestionClick = (suggestion: AddressSuggestion) => {
     // If it's a facility, use the address
     const valueToUse = suggestion.type === 'facility' ? suggestion.address || suggestion.description : suggestion.description;
-    onChange(valueToUse);
+    
+    // If returnMetadata is true, pass the metadata to the onChange handler
+    if (returnMetadata && suggestion.type === 'facility') {
+      const metadata: AddressSuggestionMetadata = {
+        facility_name: suggestion.facility_name,
+        address: suggestion.address,
+        type: suggestion.type
+      };
+      onChange(valueToUse, metadata);
+    } else {
+      onChange(valueToUse);
+    }
+    
     setShowSuggestions(false);
     inputRef.current?.focus();
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    // When the input changes, we only pass the value without metadata
+    onChange(e.target.value);
   };
 
   return (
@@ -207,7 +232,7 @@ export function AddressInput({
           ref={inputRef}
           type="text"
           value={value}
-          onChange={(e) => onChange(e.target.value)}
+          onChange={handleInputChange}
           onFocus={() => value.length >= 3 && setShowSuggestions(true)}
           placeholder={includeFacilities ? 'Enter facility name or address' : placeholder}
           disabled={disabled}

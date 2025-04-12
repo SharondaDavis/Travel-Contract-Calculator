@@ -421,37 +421,33 @@ function App() {
         </header>
 
         {/* User Profile Section */}
-        <div className="bg-white rounded-lg shadow-md p-4 mb-6">
+        <div className="bg-white rounded-lg shadow-lg p-4 mb-6">
           <div className="flex items-center justify-between">
-            <h3 className="text-lg font-medium">Your Profile</h3>
+            <h2 className="text-lg font-semibold">Your Profile</h2>
             <button 
-              onClick={() => setShowUserProfile(!showUserProfile)}
-              className="text-blue-600 hover:text-blue-800"
+              onClick={() => {
+                setTempHomeAddress(userHomeAddress);
+                setShowUserProfile(true);
+              }}
+              className="text-blue-600 hover:text-blue-800 text-sm font-medium"
             >
-              {showUserProfile ? 'Hide' : 'Edit'}
+              Edit Profile
             </button>
           </div>
           
-          {showUserProfile && (
-            <div className="mt-4">
-              <AddressInput
-                label="Your Home Address"
-                value={tempHomeAddress}
-                onChange={setTempHomeAddress}
-                placeholder="Enter your permanent tax home address"
-                includeFacilities={true}
-              />
-              <p className="mt-1 text-sm text-gray-500">
-                This address will be used for all distance calculations
-              </p>
-            </div>
-          )}
-          
-          {!showUserProfile && userHomeAddress && (
-            <div className="mt-2 text-sm text-gray-600">
-              <span className="font-medium">Home Address:</span> {userHomeAddress}
-            </div>
-          )}
+          <div className="mt-4">
+            <AddressInput
+              label="Your Home Address"
+              value={userHomeAddress}
+              onChange={(value) => setUserHomeAddress(value)}
+              placeholder="Enter your permanent tax home address"
+              includeFacilities={true}
+              returnMetadata={true}
+            />
+            <p className="mt-1 text-sm text-gray-500">
+              This address will be used for all distance calculations
+            </p>
+          </div>
         </div>
 
         {/* View Toggle */}
@@ -525,39 +521,30 @@ function App() {
                       <div className="space-y-4">
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Facility Name
-                          </label>
-                          <input
-                            type="text"
-                            name="facilityName"
-                            value={assignment.facilityName}
-                            onChange={(e) => handleInputChange(e, assignment.id)}
-                            className="w-full rounded-lg border-2 border-gray-400 shadow-sm focus:border-2 focus:border-green-600 focus:ring-green-500 transition-colors duration-200 bg-white hover:border-gray-500 px-4 py-2"
-                            placeholder="Enter facility name"
-                          />
-                          {fieldValidation[`${assignment.id}-facilityName`] && (
-                            <div className="text-green-500 mt-1">
-                              <svg className="w-5 h-5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                              </svg>
-                              <span className="ml-2">Valid</span>
-                            </div>
-                          )}
-                        </div>
-
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Location
+                            Facility Name & Location
                           </label>
                           <AddressInput
                             label=""
                             value={assignment.location}
-                            onChange={(value) => {
-                              const e = { target: { name: 'location', value } };
-                              handleInputChange(e, assignment.id);
+                            onChange={(value, metadata) => {
+                              // Update location
+                              const locationEvent = { target: { name: 'location', value } };
+                              handleInputChange(locationEvent, assignment.id);
+                              
+                              // Update facility name if metadata is provided
+                              if (metadata?.facility_name) {
+                                const facilityNameEvent = { 
+                                  target: { 
+                                    name: 'facilityName', 
+                                    value: metadata.facility_name 
+                                  } 
+                                };
+                                handleInputChange(facilityNameEvent, assignment.id);
+                              }
                             }}
-                            placeholder="Enter facility name or address"
+                            placeholder="Search for facility name or address"
                             includeFacilities={true}
+                            returnMetadata={true}
                           />
                           {fieldValidation[`${assignment.id}-location`] && (
                             <div className="text-green-500 mt-1">
@@ -565,6 +552,12 @@ function App() {
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                               </svg>
                               <span className="ml-2">Valid</span>
+                            </div>
+                          )}
+                          
+                          {assignment.facilityName && (
+                            <div className="mt-2 p-2 bg-blue-50 rounded-md">
+                              <p className="text-sm font-medium text-blue-700">Selected Facility: {assignment.facilityName}</p>
                             </div>
                           )}
                         </div>
@@ -1466,9 +1459,10 @@ function App() {
                 <AddressInput
                   label="Home Address"
                   value={tempHomeAddress}
-                  onChange={setTempHomeAddress}
+                  onChange={(value) => setTempHomeAddress(value)}
                   placeholder="Enter your home address"
                   includeFacilities={true}
+                  returnMetadata={true}
                 />
                 <p className="text-sm text-gray-500 mt-1">
                   This address will be used for all distance calculations.
