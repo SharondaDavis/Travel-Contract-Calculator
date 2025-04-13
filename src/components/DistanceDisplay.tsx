@@ -40,12 +40,17 @@ export const DistanceDisplay: React.FC<DistanceDisplayProps> = ({
       return minQualifyingDistance;
     }
 
-    if (selectedAgency === 'Custom' && customDistance) {
-      return parseFloat(customDistance);
+    // For slider values
+    if (selectedAgency.includes('miles')) {
+      // Extract the numeric part from the string (e.g., "45 miles" -> 45)
+      const match = selectedAgency.match(/(\d+)/);
+      if (match && match[1]) {
+        return parseInt(match[1]);
+      }
     }
 
-    return AGENCY_DISTANCE_REQUIREMENTS[selectedAgency as keyof typeof AGENCY_DISTANCE_REQUIREMENTS] ||
-           AGENCY_DISTANCE_REQUIREMENTS.Other;
+    // Fallback to default
+    return 45;
   };
 
   useEffect(() => {
@@ -121,30 +126,45 @@ export const DistanceDisplay: React.FC<DistanceDisplayProps> = ({
         <label className="block text-sm font-medium text-gray-700 mb-1">
           Nurse Staffing Agency's distance requirement
         </label>
-        <div className="flex gap-2">
-          <select
-            value={selectedAgency}
-            onChange={(e) => setSelectedAgency(e.target.value)}
-            className="flex-grow rounded-md border border-gray-300 shadow-sm px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-          >
-            {Object.keys(AGENCY_DISTANCE_REQUIREMENTS).map(agency => (
-              <option key={agency} value={agency}>
-                {agency}
-              </option>
-            ))}
-            <option value="Custom">Custom Distance</option>
-          </select>
-
-          {selectedAgency === 'Custom' && (
-            <div className="flex-shrink-0 w-24">
+        <div className="mb-2">
+          <input
+            type="range"
+            min="35"
+            max="55"
+            step="5"
+            value={selectedAgency.includes('miles') ? parseInt(selectedAgency) : 45}
+            onChange={(e) => {
+              const value = e.target.value;
+              setSelectedAgency(value === '55' ? '50+ miles' : `${value} miles`);
+            }}
+            className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+          />
+          <div className="flex justify-between text-xs text-gray-500 px-1 mt-1">
+            <span>35 miles</span>
+            <span>40 miles</span>
+            <span>45 miles</span>
+            <span>50 miles</span>
+            <span>50+ miles</span>
+          </div>
+        </div>
+        <div className="flex items-center justify-between">
+          <div className="text-sm font-medium text-gray-900">
+            Selected: {selectedAgency}
+          </div>
+          {selectedAgency === '50+ miles' && (
+            <div className="flex items-center">
               <input
                 type="number"
+                min="51"
                 value={customDistance}
-                onChange={(e) => setCustomDistance(e.target.value)}
-                min="0"
-                step="1"
-                placeholder="Miles"
-                className="w-full rounded-md border border-gray-300 shadow-sm px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                placeholder="Custom miles"
+                className="w-24 px-2 py-1 text-sm border rounded-md mr-2"
+                onChange={(e) => {
+                  if (e.target.value && parseInt(e.target.value) > 50) {
+                    setCustomDistance(e.target.value);
+                    setSelectedAgency(`${e.target.value} miles`);
+                  }
+                }}
               />
             </div>
           )}

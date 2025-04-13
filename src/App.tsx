@@ -1157,18 +1157,60 @@ function App() {
                           <label className="block text-sm font-medium text-gray-700 mb-1">
                             Nurse Staffing Agency's distance requirement
                           </label>
-                          <select
-                            name="agency"
-                            value={assignment.agency}
-                            onChange={(e) => handleInputChange(e, assignment.id)}
-                            className="w-full rounded-lg border-2 border-gray-400 shadow-sm focus:border-2 focus:border-green-600 focus:ring-green-500 transition-colors duration-200 bg-white hover:border-gray-500 px-4 py-2"
-                          >
-                            <option value="45 miles">45 miles</option>
-                            <option value="50 miles">50 miles</option>
-                            <option value="40 miles">40 miles</option>
-                            <option value="Other">Other</option>
-                            <option value="Custom">Custom Distance</option>
-                          </select>
+                          <div className="mb-2">
+                            <input
+                              type="range"
+                              name="agency"
+                              min="35"
+                              max="55"
+                              step="5"
+                              value={assignment.agency.includes('miles') ? parseInt(assignment.agency) : 45}
+                              onChange={(e) => {
+                                const value = e.target.value;
+                                const event = { 
+                                  target: { 
+                                    name: 'agency', 
+                                    value: value === '55' ? '50+ miles' : `${value} miles` 
+                                  } 
+                                };
+                                handleInputChange(event, assignment.id);
+                              }}
+                              className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+                            />
+                            <div className="flex justify-between text-xs text-gray-500 px-1 mt-1">
+                              <span>35 miles</span>
+                              <span>40 miles</span>
+                              <span>45 miles</span>
+                              <span>50 miles</span>
+                              <span>50+ miles</span>
+                            </div>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <div className="text-sm font-medium text-gray-900">
+                              Selected: {assignment.agency}
+                            </div>
+                            {assignment.agency === '50+ miles' && (
+                              <div className="flex items-center">
+                                <input
+                                  type="number"
+                                  min="51"
+                                  placeholder="Custom miles"
+                                  className="w-24 px-2 py-1 text-sm border rounded-md mr-2"
+                                  onChange={(e) => {
+                                    if (e.target.value && parseInt(e.target.value) > 50) {
+                                      const event = { 
+                                        target: { 
+                                          name: 'agency', 
+                                          value: `${e.target.value} miles` 
+                                        } 
+                                      };
+                                      handleInputChange(event, assignment.id);
+                                    }
+                                  }}
+                                />
+                              </div>
+                            )}
+                          </div>
                           {fieldValidation[`${assignment.id}-agency`] && (
                             <div className="text-green-500 mt-1">
                               <svg className="w-5 h-5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
