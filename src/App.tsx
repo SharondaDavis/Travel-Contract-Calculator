@@ -48,7 +48,6 @@ interface Assignment {
   };
   plannedTimeOff: string[];
   seasonality: string;
-  userHomeAddress: string;
   distanceToAssignment?: number;
   distanceQualifies?: boolean;
   agency: string;
@@ -87,7 +86,8 @@ const initialAssignment: Assignment = {
   data: {},
   plannedTimeOff: [],
   seasonality: 'summer',
-  userHomeAddress: '',
+  distanceToAssignment: undefined,
+  distanceQualifies: false,
   agency: 'Other'
 };
 
@@ -124,7 +124,6 @@ function App() {
       data: {},
       plannedTimeOff: [],
       seasonality: 'summer',
-      userHomeAddress: '',
       distanceToAssignment: undefined,
       distanceQualifies: false,
       agency: 'Other'
@@ -170,54 +169,53 @@ function App() {
     }));
   }, []);
 
-  const calculateAndUpdateDistance = async (id: string, homeAddress: string, assignmentAddress: string) => {
-    if (!homeAddress || !assignmentAddress) {
-      toast.error('Both home and assignment addresses are required');
+  const calculateAndUpdateDistance = async (id: string, assignmentAddress: string) => {
+    if (!userHomeAddress || !assignmentAddress) {
+      toast.error('Both home and assignment addresses are required for distance calculation');
       return;
     }
-    
-    toast.loading('Calculating distance...');
-    
+
     try {
-      // Calculate straight-line distance using the existing service
-      const distance = await calculateDistance(homeAddress, assignmentAddress);
+      // Try to calculate the actual distance
+      const calculatedDistance = await calculateDistance(userHomeAddress, assignmentAddress);
       
       // Update the assignment with the calculated distance
       setAssignments(prev => prev.map(assignment => {
         if (assignment.id === id) {
-          const minDistance = 45; // Default minimum distance
+          const qualifies = calculatedDistance >= 45; // Default qualification threshold
           return {
             ...assignment,
-            distanceToAssignment: distance,
-            distanceQualifies: distance >= minDistance
+            distanceToAssignment: calculatedDistance,
+            distanceQualifies: qualifies
           };
         }
         return assignment;
       }));
       
-      toast.dismiss();
-      toast.success('Distance calculated successfully!');
+      toast.success(`Distance calculated: ${calculatedDistance.toFixed(1)} miles`);
     } catch (error) {
       console.error('Error calculating distance:', error);
-      toast.dismiss();
       
-      // Fallback to simulation if real calculation fails
       try {
-        const simulatedDistance = getSimulatedDistance(homeAddress, assignmentAddress);
+        // Fallback to simulated distance for demo purposes
+        const simulatedDistance = await getSimulatedDistance(userHomeAddress, assignmentAddress);
+        
+        // Update the assignment with the simulated distance
         setAssignments(prev => prev.map(assignment => {
           if (assignment.id === id) {
-            const minDistance = 45; // Default minimum distance
+            const qualifies = simulatedDistance >= 45; // Default qualification threshold
             return {
               ...assignment,
               distanceToAssignment: simulatedDistance,
-              distanceQualifies: simulatedDistance >= minDistance
+              distanceQualifies: qualifies
             };
           }
           return assignment;
         }));
-        toast.success('Using simulated distance calculation.');
+        
+        toast.success(`Simulated distance calculated: ${simulatedDistance.toFixed(1)} miles (for demonstration)`);
       } catch (simError) {
-        toast.error('Error calculating distance. Please check addresses and try again.');
+        toast.error('Unable to calculate distance. Please check addresses and try again.');
       }
     }
   };
@@ -1149,34 +1147,7 @@ function App() {
                         </div>
                       </div>
                     </section>
-                    <section className="bg-white rounded-xl shadow-lg p-6">
-                      <h2 className="text-xl font-semibold mb-6 flex items-center gap-2">
-                        User Home Address
-                      </h2>
-                      <div className="space-y-4">
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">
-                            User Home Address
-                          </label>
-                          <input
-                            type="text"
-                            name="userHomeAddress"
-                            value={assignment.userHomeAddress}
-                            onChange={(e) => handleInputChange(e, assignment.id)}
-                            className="w-full rounded-lg border-2 border-gray-400 shadow-sm focus:border-2 focus:border-green-600 focus:ring-green-500 transition-colors duration-200 bg-white hover:border-gray-500 px-4 py-2"
-                            placeholder="Enter user home address"
-                          />
-                          {fieldValidation[`${assignment.id}-userHomeAddress`] && (
-                            <div className="text-green-500 mt-1">
-                              <svg className="w-5 h-5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                              </svg>
-                              <span className="ml-2">Valid</span>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </section>
+
                     <section className="bg-white rounded-xl shadow-lg p-6">
                       <h2 className="text-xl font-semibold mb-6 flex items-center gap-2">
                         Agency
