@@ -1089,8 +1089,8 @@ function App() {
                           </div>
 
                           {/* Weekly Take-Home Pay Breakdown */}
-                          <div className="bg-white rounded-lg p-6 mb-6 shadow-sm">
-                            <h4 className="text-lg font-medium text-gray-900 mb-4">Weekly Take-Home Pay Breakdown</h4>
+                          <div className="bg-white rounded-lg p-6 mb-6 shadow-sm text-gray-900">
+                            <h4 className="text-lg font-medium mb-4">Weekly Take-Home Pay Breakdown</h4>
                             {(() => {
                               const {
                                 weeklyTakeHome,
