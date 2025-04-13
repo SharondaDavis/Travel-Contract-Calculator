@@ -88,7 +88,7 @@ const initialAssignment: Assignment = {
   seasonality: 'summer',
   distanceToAssignment: undefined,
   distanceQualifies: false,
-  agency: 'Other'
+  agency: '45 miles'
 };
 
 function App() {
@@ -126,7 +126,7 @@ function App() {
       seasonality: 'summer',
       distanceToAssignment: undefined,
       distanceQualifies: false,
-      agency: 'Other'
+      agency: '45 miles'
     }
   ]);
   const [activeAssignments, setActiveAssignments] = useState<Set<string>>(new Set([initialAssignment.id]));
@@ -1155,7 +1155,7 @@ function App() {
                       <div className="space-y-4">
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Agency Type
+                            Nurse Staffing Agency's distance requirement
                           </label>
                           <select
                             name="agency"
@@ -1163,10 +1163,10 @@ function App() {
                             onChange={(e) => handleInputChange(e, assignment.id)}
                             className="w-full rounded-lg border-2 border-gray-400 shadow-sm focus:border-2 focus:border-green-600 focus:ring-green-500 transition-colors duration-200 bg-white hover:border-gray-500 px-4 py-2"
                           >
-                            <option value="Other">Other (45 miles)</option>
-                            <option value="Type A (50 miles)">Type A (50 miles)</option>
-                            <option value="Type B (45 miles)">Type B (45 miles)</option>
-                            <option value="Type C (40 miles)">Type C (40 miles)</option>
+                            <option value="45 miles">45 miles</option>
+                            <option value="50 miles">50 miles</option>
+                            <option value="40 miles">40 miles</option>
+                            <option value="Other">Other</option>
                             <option value="Custom">Custom Distance</option>
                           </select>
                           {fieldValidation[`${assignment.id}-agency`] && (
@@ -1178,7 +1178,7 @@ function App() {
                             </div>
                           )}
                           <p className="text-xs text-gray-500 mt-1">
-                            Different agency types have different distance requirements for tax-free stipend qualification.
+                            Different agencies have different distance requirements for tax-free stipend qualification.
                           </p>
                         </div>
                       </div>

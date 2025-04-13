@@ -11,11 +11,11 @@ interface DistanceDisplayProps {
   onDistanceCalculated?: (distance: number, qualifies: boolean) => void;
 }
 
-// Common distance requirements by agency type
+// Common distance requirements
 const AGENCY_DISTANCE_REQUIREMENTS = {
-  'Type A (50 miles)': 50,
-  'Type B (45 miles)': 45,
-  'Type C (40 miles)': 40,
+  '50 miles': 50,
+  '45 miles': 45,
+  '40 miles': 40,
   'Other': 45 // Default
 };
 
@@ -24,7 +24,7 @@ export const DistanceDisplay: React.FC<DistanceDisplayProps> = ({
   facilityLocation,
   facilityName,
   minQualifyingDistance,
-  agencyName = 'Other',
+  agencyName = '45 miles',
   onDistanceCalculated
 }) => {
   const [distance, setDistance] = useState<number | null>(null);
@@ -119,7 +119,7 @@ export const DistanceDisplay: React.FC<DistanceDisplayProps> = ({
 
       <div className="mb-4">
         <label className="block text-sm font-medium text-gray-700 mb-1">
-          Agency Type
+          Nurse Staffing Agency's distance requirement
         </label>
         <div className="flex gap-2">
           <select
@@ -179,7 +179,7 @@ export const DistanceDisplay: React.FC<DistanceDisplayProps> = ({
 
           <div className="mt-3 p-3 bg-blue-50 rounded-md">
             <p className="text-sm text-blue-800">
-              <strong>Note:</strong> Your selected agency type requires a minimum distance of <strong>{getQualifyingDistance()} miles</strong> to qualify for tax-free meal and housing stipends.
+              <strong>Note:</strong> Your selected requirement of <strong>{getQualifyingDistance()} miles</strong> must be met to qualify for tax-free meal and housing stipends.
             </p>
           </div>
         </div>
