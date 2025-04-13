@@ -163,11 +163,16 @@ The goal is to empower nurses to build applications that:
 
 ## Contributing
 
-1. Fork the repository
-2. Create a new branch (`git checkout -b feature/your-feature`)
-3. Commit your changes (`git commit -am 'Add some feature'`)
-4. Push to the branch (`git push origin feature/your-feature`)
-5. Create a new Pull Request
+We welcome contributions! To ensure alignment and avoid duplicate work, please follow these steps:
+
+1. **Open an issue first** to discuss new features or enhancements before submitting a PR. This helps us agree on scope and approach.
+2. Fork the repository.
+3. Create a new branch (`git checkout -b feature/your-feature`).
+4. Commit your changes (`git commit -am 'Add some feature'`).
+5. Push to the branch (`git push origin feature/your-feature`).
+6. Create a new Pull Request referencing the related issue.
+
+Thank you for contributing! 💡
 
 ## License
 
