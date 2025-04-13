@@ -3,6 +3,7 @@
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
   "framework": "vite",
+  "public": true,
   "installCommand": "npm install",
   "functions": {
     "api/chat/index.ts": {
