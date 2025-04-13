@@ -1090,7 +1090,7 @@ function App() {
 
                           {/* Weekly Take-Home Pay Breakdown */}
                           <div className="bg-white rounded-lg p-6 mb-6 shadow-sm">
-                            <h4 className="text-lg font-medium mb-4">Weekly Take-Home Pay Breakdown</h4>
+                            <h4 className="text-lg font-medium text-gray-900 mb-4">Weekly Take-Home Pay Breakdown</h4>
                             {(() => {
                               const {
                                 weeklyTakeHome,
@@ -1101,21 +1101,21 @@ function App() {
                               return (
                                 <div className="space-y-3">
                                   <div className="flex justify-between items-center">
-                                    <span>Hourly Pay (Taxable):</span>
+                                    <span className="text-gray-900">Hourly Pay (Taxable):</span>
                                     <span className="text-gray-900">${weeklyTaxableIncome.toFixed(2)}</span>
                                   </div>
                                   <div className="flex justify-between items-center">
-                                    <span>Estimated Taxes:</span>
+                                    <span className="text-gray-900">Estimated Taxes:</span>
                                     <span className="text-red-600">-${weeklyTaxes.toFixed(2)}</span>
                                   </div>
                                   <div className="flex justify-between items-center">
-                                    <span>Weekly Stipends (Non-Taxable):</span>
+                                    <span className="text-gray-900">Weekly Stipends (Non-Taxable):</span>
                                     <span className="text-green-600">+${weeklyNonTaxableIncome.toFixed(2)}</span>
                                   </div>
                                   <div className="h-px bg-gray-200 my-2"></div>
                                   <div className="flex justify-between items-center font-medium">
-                                    <span>Total Weekly Take-Home:</span>
-                                    <span className="text-xl text-blue-600">${weeklyTakeHome.toFixed(2)}</span>
+                                    <span className="text-gray-900">Total Weekly Take-Home:</span>
+                                    <span className="text-xl text-gray-900">${weeklyTakeHome.toFixed(2)}</span>
                                   </div>
                                 </div>
                               );
@@ -1124,18 +1124,18 @@ function App() {
 
                           {/* Weekly Net Income (After Expenses) */}
                           <div className="bg-white rounded-lg p-6 mb-6 shadow-sm">
-                            <h4 className="text-lg font-medium mb-4">Weekly Net Income (After Expenses)</h4>
+                            <h4 className="text-lg font-medium text-gray-900 mb-4">Weekly Net Income (After Expenses)</h4>
                             <div className="flex justify-between items-center mb-2">
-                              <span>Weekly Net Income:</span>
-                              <div className="text-xl">
+                              <span className="text-gray-900">Weekly Net Income:</span>
+                              <div className="text-xl text-gray-900">
                                 <span>${calculateNetIncome(assignment)}</span>
                               </div>
                             </div>
                           </div>
 
                           {/* Final Take Home */}
-                          <div className="h-px bg-white/20 my-2"></div>
-                          <div className="flex justify-between items-center text-lg font-bold">
+                          <div className="h-px bg-gray-200 my-2"></div>
+                          <div className="flex justify-between items-center text-lg font-bold text-gray-900">
                             <span>Estimated Take Home:</span>
                             <span>${calculateNetIncome(assignment)}</span>
                           </div>
