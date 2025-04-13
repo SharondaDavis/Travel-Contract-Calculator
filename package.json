@@ -10,7 +10,8 @@
     "dev:server": "node dev-server.mjs",
     "dev:app": "vite",
     "dev": "concurrently \"npm run dev:server\" \"npm run dev:app\"",
-    "build": "vite build",
+    "generate-version": "node scripts/generate-version.js",
+    "build": "npm run generate-version && vite build",
     "preview": "vite preview"
   },
   "dependencies": {

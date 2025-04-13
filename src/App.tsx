@@ -1,4 +1,6 @@
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useEffect } from 'react';
+import { checkForUpdates, initializeVersion } from './services/versionService';
+import { UpdateNotification } from './components/UpdateNotification';
 import { Calculator, CheckCircle, AlertCircle, Star, Lightbulb, Trash2, Plus, MessageSquare, Settings } from 'lucide-react';
 import { useContractScore } from './hooks/useContractScore';
 import { BarChart as RechartsBarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
@@ -23,6 +25,7 @@ interface Assignment {
   mealStipend: string;
   transportationStipend: string;
   otherStipend: string;
+  transportationType: string;
   transportationCost: string;
   housingCost: string;
   foodCost: string;
@@ -34,7 +37,9 @@ interface Assignment {
   rideshareExpenses: string;
   commuteDistance: string;
   fuelCostPerGallon: string;
+  vehicleMpg: string;
   parkingCost: string;
+  useCurrentGasPrice: boolean;
   data?: {
     housing_data?: any;
     transportation_data?: any;
@@ -62,6 +67,7 @@ const initialAssignment: Assignment = {
   mealStipend: '',
   transportationStipend: '',
   otherStipend: '',
+  transportationType: '',
   transportationCost: '',
   housingCost: '',
   foodCost: '',
@@ -73,7 +79,9 @@ const initialAssignment: Assignment = {
   rideshareExpenses: '',
   commuteDistance: '',
   fuelCostPerGallon: '',
+  vehicleMpg: '25',
   parkingCost: '',
+  useCurrentGasPrice: true,
   data: {},
   plannedTimeOff: [],
   seasonality: 'summer'
@@ -87,21 +95,62 @@ function App() {
   const [showChat, setShowChat] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [selectedContractId, setSelectedContractId] = useState<string>(initialAssignment.id);
+  const [updateAvailable, setUpdateAvailable] = useState(false);
+
+  useEffect(() => {
+    const initVersion = async () => {
+      console.log('Initializing version check...');
+      await initializeVersion();
+      const hasUpdate = await checkForUpdates();
+      console.log('Update check result:', hasUpdate);
+      setUpdateAvailable(hasUpdate);
+    };
+
+    // Initialize version on mount
+    initVersion();
+
+    // Check periodically (every 5 minutes)
+    const interval = setInterval(async () => {
+      const hasUpdate = await checkForUpdates();
+      setUpdateAvailable(hasUpdate);
+    }, 5 * 60 * 1000); // Check every 5 minutes
+
+    return () => clearInterval(interval);
+  }, []);
+
+  const handleRefresh = () => {
+    window.location.reload();
+  };
+
+  const handleDismiss = () => {
+    setUpdateAvailable(false);
+  };
 
   // Track field validation
   const [fieldValidation, setFieldValidation] = useState<{ [key: string]: boolean }>({});
 
-  const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>, id: string) => {
+  const handleInputChange = (id: string, e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement> | { target: { name: string; value: string | boolean } }) => {
     const { name, value } = e.target;
-    setAssignments(prev => prev.map(assignment => 
-      assignment.id === id ? { ...assignment, [name]: value } : assignment
-    ));
-    // Mark field as validated
-    setFieldValidation(prev => ({
-      ...prev,
-      [`${id}-${name}`]: value.trim() !== ''
+    setAssignments(prev => prev.map(assignment => {
+      if (assignment.id === id) {
+        if (name === 'useCurrentGasPrice') {
+          // Handle boolean checkbox value
+          return { ...assignment, [name]: value as boolean };
+        }
+        return { ...assignment, [name]: value as string };
+      }
+      return assignment;
     }));
-  }, []);
+
+    // Only validate string fields
+    if (typeof value === 'string') {
+      if (value.trim() === '') {
+        setFieldValidation(prev => ({ ...prev, [name]: false }));
+      } else {
+        setFieldValidation(prev => ({ ...prev, [name]: true }));
+      }
+    }
+  };
 
   const addNewAssignment = () => {
     const newId = (assignments.length + 1).toString();
@@ -146,19 +195,33 @@ function App() {
     };
   };
 
+  // Current average gas price (this would normally come from an API)
+  const getCurrentGasPrice = () => {
+    // This is a placeholder. In production, you'd fetch this from a gas price API
+    return 3.50; // National average as of 2025
+  };
+
   const calculateTransportationExpenses = (assignment: Assignment) => {
-    const publicTransport = parseFloat(assignment.transportationCost) || 0;
-    const rideshare = parseFloat(assignment.rideshareExpenses) || 0;
+    if (assignment.transportationType === 'public' || assignment.transportationType === 'rideshare') {
+      return parseFloat(assignment.transportationCost) || 0;
+    }
+
+    // Personal vehicle calculations
     const parking = parseFloat(assignment.parkingCost) || 0;
     const distance = parseFloat(assignment.commuteDistance) || 0;
-    const fuelCostPerGallon = parseFloat(assignment.fuelCostPerGallon) || 0;
-    const mpg = 25; // Average MPG
+    const mpg = parseFloat(assignment.vehicleMpg) || 25; // Use custom MPG or default to 25
     
-    // Calculate fuel expenses based on distance, MPG, and cost per gallon (assuming 5 work days)
-    // Formula: (distance * 2 * 5 * fuelCostPerGallon) / MPG
-    const weeklyFuelExpense = ((distance * 2 * 5) / mpg) * fuelCostPerGallon;
+    // Get gas price
+    const gasPrice = assignment.useCurrentGasPrice 
+      ? getCurrentGasPrice()
+      : (parseFloat(assignment.fuelCostPerGallon) || getCurrentGasPrice());
     
-    return publicTransport + rideshare + parking + weeklyFuelExpense;
+    // Calculate monthly fuel expenses
+    // Formula: (one-way distance * 2 for round trip * 5 workdays * 4 weeks * gas price) / MPG
+    const monthlyFuelCost = ((distance * 2 * 5 * 4 * gasPrice) / mpg);
+    
+    // Total monthly transportation cost
+    return monthlyFuelCost + parking;
   };
 
   const calculateLivingExpenses = (assignment: Assignment) => {
@@ -337,6 +400,12 @@ function App() {
   return (
     <div className="min-h-screen bg-gray-50">
       <Toaster position="top-right" />
+      {updateAvailable && (
+        <UpdateNotification
+          onRefresh={handleRefresh}
+          onDismiss={handleDismiss}
+        />
+      )}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <header className="text-center mb-12">
           <div className="flex flex-col items-center gap-3 mb-4">
@@ -440,7 +509,7 @@ function App() {
                             type="text"
                             name="facilityName"
                             value={assignment.facilityName}
-                            onChange={(e) => handleInputChange(e, assignment.id)}
+                            onChange={(e) => handleInputChange(assignment.id, e)}
                             className="w-full rounded-lg border-2 border-gray-400 shadow-sm focus:border-2 focus:border-green-600 focus:ring-green-500 transition-colors duration-200 bg-white hover:border-gray-500 px-4 py-2"
                             placeholder="Enter facility name"
                           />
@@ -462,7 +531,7 @@ function App() {
                             type="text"
                             name="location"
                             value={assignment.location}
-                            onChange={(e) => handleInputChange(e, assignment.id)}
+                            onChange={(e) => handleInputChange(assignment.id, e)}
                             className="w-full rounded-lg border-2 border-gray-400 shadow-sm focus:border-2 focus:border-green-600 focus:ring-green-500 transition-colors duration-200 bg-white hover:border-gray-500 px-4 py-2"
                             placeholder="City, State"
                           />
@@ -484,7 +553,7 @@ function App() {
                             type="text"
                             name="specialty"
                             value={assignment.specialty}
-                            onChange={(e) => handleInputChange(e, assignment.id)}
+                            onChange={(e) => handleInputChange(assignment.id, e)}
                             className="w-full rounded-lg border-2 border-gray-400 shadow-sm focus:border-2 focus:border-green-600 focus:ring-green-500 transition-colors duration-200 bg-white hover:border-gray-500 px-4 py-2"
                             placeholder="e.g., ICU, Med-Surg, ER"
                           />
@@ -505,7 +574,7 @@ function App() {
                           <select
                             name="shiftType"
                             value={assignment.shiftType}
-                            onChange={(e) => handleInputChange(e, assignment.id)}
+                            onChange={(e) => handleInputChange(assignment.id, e)}
                             className="w-full rounded-lg border-2 border-gray-400 shadow-sm focus:border-2 focus:border-green-600 focus:ring-green-500 transition-colors duration-200 bg-white hover:border-gray-500 px-4 py-2"
                           >
                             <option value="">Select shift type</option>
@@ -531,7 +600,7 @@ function App() {
                             type="number"
                             name="contractLength"
                             value={assignment.contractLength}
-                            onChange={(e) => handleInputChange(e, assignment.id)}
+                            onChange={(e) => handleInputChange(assignment.id, e)}
                             className="w-full rounded-lg border-2 border-gray-400 shadow-sm focus:border-2 focus:border-green-600 focus:ring-green-500 transition-colors duration-200 bg-white hover:border-gray-500 px-4 py-2"
                             placeholder="13"
                           />
@@ -553,7 +622,7 @@ function App() {
                             type="date"
                             name="startDate"
                             value={assignment.startDate}
-                            onChange={(e) => handleInputChange(e, assignment.id)}
+                            onChange={(e) => handleInputChange(assignment.id, e)}
                             className="w-full rounded-lg border-2 border-gray-400 shadow-sm focus:border-2 focus:border-green-600 focus:ring-green-500 transition-colors duration-200 bg-white hover:border-gray-500 px-4 py-2"
                           />
                           {fieldValidation[`${assignment.id}-startDate`] && (
@@ -582,7 +651,7 @@ function App() {
                             type="number"
                             name="hourlyRate"
                             value={assignment.hourlyRate}
-                            onChange={(e) => handleInputChange(e, assignment.id)}
+                            onChange={(e) => handleInputChange(assignment.id, e)}
                             className="w-full rounded-lg border-2 border-gray-400 shadow-sm focus:border-2 focus:border-green-600 focus:ring-green-500 transition-colors duration-200 bg-white hover:border-gray-500 px-4 py-2"
                             placeholder="0.00"
                           />
@@ -604,7 +673,7 @@ function App() {
                             type="number"
                             name="weeklyHours"
                             value={assignment.weeklyHours}
-                            onChange={(e) => handleInputChange(e, assignment.id)}
+                            onChange={(e) => handleInputChange(assignment.id, e)}
                             className="w-full rounded-lg border-2 border-gray-400 shadow-sm focus:border-2 focus:border-green-600 focus:ring-green-500 transition-colors duration-200 bg-white hover:border-gray-500 px-4 py-2"
                             placeholder="36"
                           />
@@ -627,7 +696,7 @@ function App() {
                                 type="number"
                                 name="housingStipend"
                                 value={assignment.housingStipend}
-                                onChange={(e) => handleInputChange(e, assignment.id)}
+                                onChange={(e) => handleInputChange(assignment.id, e)}
                                 className="w-full rounded-lg border-2 border-gray-400 shadow-sm focus:border-2 focus:border-green-600 focus:ring-green-500 transition-colors duration-200 bg-white hover:border-gray-500 px-4 py-2"
                                 placeholder="0.00"
                               />
@@ -646,7 +715,7 @@ function App() {
                                 type="number"
                                   name="mealStipend"
                                   value={assignment.mealStipend}
-                                onChange={(e) => handleInputChange(e, assignment.id)}
+                                onChange={(e) => handleInputChange(assignment.id, e)}
                                 className="w-full rounded-lg border-2 border-gray-400 shadow-sm focus:border-2 focus:border-green-600 focus:ring-green-500 transition-colors duration-200 bg-white hover:border-gray-500 px-4 py-2"
                                 placeholder="0.00"
                               />
@@ -665,7 +734,7 @@ function App() {
                                 type="number"
                                   name="transportationStipend"
                                   value={assignment.transportationStipend}
-                                onChange={(e) => handleInputChange(e, assignment.id)}
+                                onChange={(e) => handleInputChange(assignment.id, e)}
                                 className="w-full rounded-lg border-2 border-gray-400 shadow-sm focus:border-2 focus:border-green-600 focus:ring-green-500 transition-colors duration-200 bg-white hover:border-gray-500 px-4 py-2"
                                 placeholder="0.00"
                               />
@@ -684,7 +753,7 @@ function App() {
                                   type="number"
                                   name="otherStipend"
                                   value={assignment.otherStipend}
-                                  onChange={(e) => handleInputChange(e, assignment.id)}
+                                  onChange={(e) => handleInputChange(assignment.id, e)}
                                   className="w-full rounded-lg border-2 border-gray-400 shadow-sm focus:border-2 focus:border-green-600 focus:ring-green-500 transition-colors duration-200 bg-white hover:border-gray-500 px-4 py-2"
                                   placeholder="0.00"
                                 />
@@ -709,7 +778,7 @@ function App() {
                                 type="number"
                                 name="signOnBonus"
                                 value={assignment.signOnBonus}
-                                onChange={(e) => handleInputChange(e, assignment.id)}
+                                onChange={(e) => handleInputChange(assignment.id, e)}
                                 className="w-full rounded-lg border-2 border-gray-400 shadow-sm focus:border-2 focus:border-green-600 focus:ring-green-500 transition-colors duration-200 bg-white hover:border-gray-500 px-4 py-2"
                                 placeholder="0.00"
                               />
@@ -728,7 +797,7 @@ function App() {
                                 type="number"
                                 name="completionBonus"
                                 value={assignment.completionBonus}
-                                onChange={(e) => handleInputChange(e, assignment.id)}
+                                onChange={(e) => handleInputChange(assignment.id, e)}
                                 className="w-full rounded-lg border-2 border-gray-400 shadow-sm focus:border-2 focus:border-green-600 focus:ring-green-500 transition-colors duration-200 bg-white hover:border-gray-500 px-4 py-2"
                                 placeholder="0.00"
                               />
@@ -747,7 +816,7 @@ function App() {
                                   type="number"
                                   name="referralBonus"
                                   value={assignment.referralBonus}
-                                  onChange={(e) => handleInputChange(e, assignment.id)}
+                                  onChange={(e) => handleInputChange(assignment.id, e)}
                                   className="w-full rounded-lg border-2 border-gray-400 shadow-sm focus:border-2 focus:border-green-600 focus:ring-green-500 transition-colors duration-200 bg-white hover:border-gray-500 px-4 py-2"
                                   placeholder="0.00"
                                 />
@@ -766,7 +835,7 @@ function App() {
                                   type="number"
                                   name="otherBonus"
                                   value={assignment.otherBonus}
-                                  onChange={(e) => handleInputChange(e, assignment.id)}
+                                  onChange={(e) => handleInputChange(assignment.id, e)}
                                   className="w-full rounded-lg border-2 border-gray-400 shadow-sm focus:border-2 focus:border-green-600 focus:ring-green-500 transition-colors duration-200 bg-white hover:border-gray-500 px-4 py-2"
                                   placeholder="0.00"
                                 />
@@ -796,45 +865,110 @@ function App() {
                           </label>
                           <select
                             name="transportationType"
-                              value={assignment.shiftType}
-                            onChange={(e) => handleInputChange(e, assignment.id)}
-                            className="w-full rounded-lg border-2 border-gray-400 shadow-sm focus:border-2 focus:border-green-600 focus:ring-green-500 transition-colors duration-200 bg-white hover:border-gray-500 px-4 py-2"
+                            value={assignment.transportationType}
+                            onChange={(e) => handleInputChange(assignment.id, e)}
+                            className="w-full p-2 border rounded focus:border-blue-500 focus:outline-none"
                           >
+                            <option value="">Select Type</option>
                             <option value="public">Public Transportation</option>
-                            <option value="rideshare">Rideshare (Uber/Lyft)</option>
+                            <option value="rideshare">Rideshare</option>
                             <option value="personal">Personal Vehicle</option>
                           </select>
-                          {fieldValidation[`${assignment.id}-transportationType`] && (
-                            <div className="text-green-500 mt-1">
-                              <svg className="w-5 h-5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                              </svg>
-                              <span className="ml-2">Valid</span>
-                            </div>
-                          )}
                         </div>
 
-                          {assignment.shiftType === 'public' && (
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                              Weekly Public Transport Cost
-                            </label>
-                            <input
-                              type="number"
+                        {assignment.transportationType === 'personal' && (
+                          <div className="space-y-4 bg-gray-50 p-4 rounded-lg">
+                            <h5 className="font-medium text-gray-700">Personal Vehicle Details</h5>
+                            
+                            <div className="grid grid-cols-2 gap-4">
+                              <div>
+                                <label className="block text-sm text-gray-600 mb-1">
+                                  Daily Commute (miles)
+                                </label>
+                                <input
+                                  type="text"
+                                  name="commuteDistance"
+                                  value={assignment.commuteDistance}
+                                  onChange={(e) => handleInputChange(assignment.id, e)}
+                                  className="w-full p-2 border rounded focus:border-blue-500 focus:outline-none"
+                                  placeholder="One-way distance"
+                                />
+                              </div>
+
+                              <div>
+                                <label className="block text-sm text-gray-600 mb-1">
+                                  Vehicle MPG
+                                </label>
+                                <input
+                                  type="text"
+                                  name="vehicleMpg"
+                                  value={assignment.vehicleMpg}
+                                  onChange={(e) => handleInputChange(assignment.id, e)}
+                                  className="w-full p-2 border rounded focus:border-blue-500 focus:outline-none"
+                                  placeholder="Miles per gallon"
+                                />
+                              </div>
+                            </div>
+
+                            <div className="space-y-2">
+                              <div className="flex items-center justify-between">
+                                <label className="block text-sm text-gray-600">
+                                  Gas Price (per gallon)
+                                </label>
+                                <div className="flex items-center space-x-2">
+                                  <input
+                                    type="checkbox"
+                                    name="useCurrentGasPrice"
+                                    checked={assignment.useCurrentGasPrice}
+                                    onChange={(e) => handleInputChange(assignment.id, { target: { name: 'useCurrentGasPrice', value: e.target.checked } })}
+                                    className="form-checkbox h-4 w-4 text-blue-600"
+                                  />
+                                  <span className="text-sm text-gray-500">Use current average</span>
+                                </div>
+                              </div>
+                              
+                              <input
+                                type="text"
+                                name="fuelCostPerGallon"
+                                value={assignment.fuelCostPerGallon}
+                                onChange={(e) => handleInputChange(assignment.id, e)}
+                                disabled={assignment.useCurrentGasPrice}
+                                className="w-full p-2 border rounded focus:border-blue-500 focus:outline-none disabled:bg-gray-100"
+                                placeholder={assignment.useCurrentGasPrice ? 'Using current average' : 'Enter price per gallon'}
+                              />
+                            </div>
+
+                            <div>
+                              <label className="block text-sm text-gray-600 mb-1">
+                                Monthly Parking Cost
+                              </label>
+                              <input
+                                type="text"
+                                name="parkingCost"
+                                value={assignment.parkingCost}
+                                onChange={(e) => handleInputChange(assignment.id, e)}
+                                className="w-full p-2 border rounded focus:border-blue-500 focus:outline-none"
+                                placeholder="Enter parking cost"
+                              />
+                            </div>
+                          </div>
+                        )}
+
+                        {(assignment.transportationType === 'public' || assignment.transportationType === 'rideshare') && (
+                          <div className="mb-4">
+                            <div className="flex items-center justify-between">
+                              <label className="block text-sm text-gray-600 mb-1">
+                                Monthly Transportation Cost
+                              </label>
+                              <input
+                                type="text"
                                 name="transportationCost"
                                 value={assignment.transportationCost}
-                              onChange={(e) => handleInputChange(e, assignment.id)}
-                              className="w-full rounded-lg border-2 border-gray-400 shadow-sm focus:border-2 focus:border-green-600 focus:ring-green-500 transition-colors duration-200 bg-white hover:border-gray-500 px-4 py-2"
-                              placeholder="0.00"
-                            />
-                              {fieldValidation[`${assignment.id}-transportationCost`] && (
-                              <div className="text-green-500 mt-1">
-                                <svg className="w-5 h-5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                                </svg>
-                                <span className="ml-2">Valid</span>
-                              </div>
-                            )}
+                                onChange={(e) => handleInputChange(assignment.id, e)}
+                                className="w-full p-2 border rounded focus:border-blue-500 focus:outline-none"
+                                placeholder="Enter monthly cost"
+                              />
+                            </div>
                           </div>
                         )}
 
@@ -847,7 +981,7 @@ function App() {
                               type="number"
                               name="rideshareExpenses"
                               value={assignment.rideshareExpenses}
-                              onChange={(e) => handleInputChange(e, assignment.id)}
+                              onChange={(e) => handleInputChange(assignment.id, e)}
                               className="w-full rounded-lg border-2 border-gray-400 shadow-sm focus:border-2 focus:border-green-600 focus:ring-green-500 transition-colors duration-200 bg-white hover:border-gray-500 px-4 py-2"
                               placeholder="0.00"
                             />
@@ -872,7 +1006,7 @@ function App() {
                                 type="number"
                                 name="commuteDistance"
                                 value={assignment.commuteDistance}
-                                onChange={(e) => handleInputChange(e, assignment.id)}
+                                onChange={(e) => handleInputChange(assignment.id, e)}
                                 className="w-full rounded-lg border-2 border-gray-400 shadow-sm focus:border-2 focus:border-green-600 focus:ring-green-500 transition-colors duration-200 bg-white hover:border-gray-500 px-4 py-2"
                                 placeholder="0.00"
                               />
@@ -893,7 +1027,7 @@ function App() {
                                 type="number"
                                 name="fuelCostPerGallon"
                                 value={assignment.fuelCostPerGallon}
-                                onChange={(e) => handleInputChange(e, assignment.id)}
+                                onChange={(e) => handleInputChange(assignment.id, e)}
                                 className="w-full rounded-lg border-2 border-gray-400 shadow-sm focus:border-2 focus:border-green-600 focus:ring-green-500 transition-colors duration-200 bg-white hover:border-gray-500 px-4 py-2"
                                 placeholder="0.00"
                               />
@@ -914,7 +1048,7 @@ function App() {
                                 type="number"
                                 name="parkingCost"
                                 value={assignment.parkingCost}
-                                onChange={(e) => handleInputChange(e, assignment.id)}
+                                onChange={(e) => handleInputChange(assignment.id, e)}
                                 className="w-full rounded-lg border-2 border-gray-400 shadow-sm focus:border-2 focus:border-green-600 focus:ring-green-500 transition-colors duration-200 bg-white hover:border-gray-500 px-4 py-2"
                                 placeholder="0.00"
                               />
@@ -946,7 +1080,7 @@ function App() {
                             type="number"
                               name="housingCost"
                               value={assignment.housingCost}
-                            onChange={(e) => handleInputChange(e, assignment.id)}
+                            onChange={(e) => handleInputChange(assignment.id, e)}
                             className="w-full rounded-lg border-2 border-gray-400 shadow-sm focus:border-2 focus:border-green-600 focus:ring-green-500 transition-colors duration-200 bg-white hover:border-gray-500 px-4 py-2"
                             placeholder="0.00"
                           />
@@ -968,7 +1102,7 @@ function App() {
                             type="number"
                               name="foodCost"
                               value={assignment.foodCost}
-                            onChange={(e) => handleInputChange(e, assignment.id)}
+                            onChange={(e) => handleInputChange(assignment.id, e)}
                             className="w-full rounded-lg border-2 border-gray-400 shadow-sm focus:border-2 focus:border-green-600 focus:ring-green-500 transition-colors duration-200 bg-white hover:border-gray-500 px-4 py-2"
                             placeholder="0.00"
                           />
@@ -990,7 +1124,7 @@ function App() {
                             type="number"
                               name="otherCost"
                               value={assignment.otherCost}
-                            onChange={(e) => handleInputChange(e, assignment.id)}
+                            onChange={(e) => handleInputChange(assignment.id, e)}
                             className="w-full rounded-lg border-2 border-gray-400 shadow-sm focus:border-2 focus:border-green-600 focus:ring-green-500 transition-colors duration-200 bg-white hover:border-gray-500 px-4 py-2"
                             placeholder="0.00"
                           />
