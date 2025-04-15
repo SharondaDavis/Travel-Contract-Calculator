@@ -1,4 +1,4 @@
-# Travel Nurse Contract Calculator
+# Travel Nurse AI Assistant
 
 A privacy-focused, client-side application for travel nurses to analyze and compare contract offers. Built with modern web standards and designed to be interoperable with healthcare systems through SMART FHIR standards, this tool puts nurses in control of their contract data while maintaining complete privacy.
 
