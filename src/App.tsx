@@ -1,11 +1,12 @@
 import React, { useState, useCallback, useMemo } from 'react';
-import { Calculator, CheckCircle, AlertCircle, Star, Lightbulb, Trash2, Plus, MessageSquare, Settings } from 'lucide-react';
+import { Calculator, CheckCircle, AlertCircle, Star, Lightbulb, Trash2, Plus, MessageSquare, Settings, PlayCircle } from 'lucide-react';
 import { useContractScore } from './hooks/useContractScore';
 import { BarChart as RechartsBarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { Tab } from '@headlessui/react';
 import { ContractStorageButton } from './components/ContractStorageButton';
 import { ChatPanel } from './components/ChatPanel';
 import { SettingsPanel } from './components/SettingsPanel';
+import { VideoModal } from './components/VideoModal';
 import { toast, Toaster } from 'react-hot-toast';
 
 interface Assignment {
@@ -87,6 +88,7 @@ function App() {
   const [showChat, setShowChat] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [selectedContractId, setSelectedContractId] = useState<string>(initialAssignment.id);
+  const [showTutorial, setShowTutorial] = useState(false);
 
   // Track field validation
   const [fieldValidation, setFieldValidation] = useState<{ [key: string]: boolean }>({});
@@ -346,19 +348,27 @@ function App() {
           <div className="flex justify-center gap-4">
               <button
                 onClick={() => setShowChat(true)}
-              className="flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100 transition-colors duration-200"
+                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100 transition-colors duration-200"
                 title="Chat about your contracts"
               >
-              <MessageSquare className="w-5 h-5" />
-              <span>Chat</span>
+                <MessageSquare className="w-5 h-5" />
+                <span>Chat</span>
               </button>
               <button
                 onClick={() => setShowSettings(true)}
-              className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-50 text-gray-700 hover:bg-gray-100 transition-colors duration-200"
+                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-50 text-gray-700 hover:bg-gray-100 transition-colors duration-200"
                 title="Settings"
               >
-              <Settings className="w-5 h-5" />
-              <span>Settings</span>
+                <Settings className="w-5 h-5" />
+                <span>Settings</span>
+              </button>
+              <button
+                onClick={() => setShowTutorial(true)}
+                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-green-50 text-green-700 hover:bg-green-100 transition-colors duration-200"
+                title="Watch Tutorial"
+              >
+                <PlayCircle className="w-5 h-5" />
+                <span>Watch the Tutorial</span>
               </button>
             </div>
         </header>
@@ -1341,6 +1351,12 @@ function App() {
         {showSettings && (
           <SettingsPanel onClose={() => setShowSettings(false)} />
         )}
+
+        <VideoModal 
+          isOpen={showTutorial} 
+          onClose={() => setShowTutorial(false)} 
+          videoId="TBLLjfq58ZU" 
+        />
 
         {/* Footer */}
         <footer className="mt-12 pt-8 border-t border-gray-200">
